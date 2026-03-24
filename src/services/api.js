@@ -417,8 +417,8 @@ export const notifications = {
 // ── Verification (2FA) ───────────────────────────────────
 
 export const verification = {
-  async sendCode(userId, method) {
-    return request('/verification/send', { method: 'POST', body: { user_id: userId, method } });
+  async sendCode(userId) {
+    return request('/verification/send', { method: 'POST', body: { user_id: userId } });
   },
 
   async verifyCode(userId, code, rememberDevice = false) {

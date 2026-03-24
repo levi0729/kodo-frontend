@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Eye, EyeOff, LogIn, UserPlus, Loader2, Mail, Smartphone, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Eye, EyeOff, LogIn, UserPlus, Loader2, Mail, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
@@ -10,28 +10,29 @@ function VerificationScreen() {
   const toast = useToast();
   const a = t.auth;
 
-  const [step, setStep] = useState('choose'); // 'choose' | 'code'
-  const [method, setMethod] = useState(null);
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [rememberDevice, setRememberDevice] = useState(false);
   const [error, setError] = useState('');
   const [destination, setDestination] = useState('');
   const [devCode, setDevCode] = useState('');
+  const [sent, setSent] = useState(false);
   const inputRefs = useRef([]);
 
-  const handleSendCode = async (selectedMethod) => {
-    setMethod(selectedMethod);
-    setError('');
-    const result = await sendVerificationCode(selectedMethod);
-    if (result.success) {
-      setDestination(result.destination);
-      setDevCode(result.devCode || '');
-      setStep('code');
-      toast.success(a.codeSent || 'Kód elküldve!');
-    } else {
-      setError(result.error);
+  // Auto-send email verification code on mount
+  useEffect(() => {
+    if (!sent && verificationPending) {
+      setSent(true);
+      sendVerificationCode().then(result => {
+        if (result.success) {
+          setDestination(result.destination);
+          setDevCode(result.devCode || '');
+          toast.success(a.codeSent || 'Kód elküldve!');
+        } else {
+          setError(result.error);
+        }
+      });
     }
-  };
+  }, [verificationPending]);
 
   const handleCodeChange = (index, value) => {
     if (value.length > 1) value = value.slice(-1);
@@ -90,10 +91,17 @@ function VerificationScreen() {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setCode(['', '', '', '', '', '']);
     setError('');
-    handleSendCode(method);
+    const result = await sendVerificationCode();
+    if (result.success) {
+      setDestination(result.destination);
+      setDevCode(result.devCode || '');
+      toast.success(a.codeSent || 'Kód elküldve!');
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
@@ -117,56 +125,13 @@ function VerificationScreen() {
         </div>
 
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 backdrop-blur-sm">
-          {step === 'choose' ? (
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => handleSendCode('email')}
-                className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-kodo-accent/40 hover:bg-white/[0.06] transition-all cursor-pointer text-left"
-              >
-                <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                  <Mail size={22} className="text-indigo-400" />
-                </div>
-                <div>
-                  <div className="text-[14px] font-semibold text-white">{a.verifyByEmail}</div>
-                  <div className="text-[12px] text-kodo-text-muted mt-0.5">{verificationPending?.email}</div>
-                </div>
-              </button>
-
-              {verificationPending?.hasPhone && (
-                <button
-                  onClick={() => handleSendCode('sms')}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-kodo-accent/40 hover:bg-white/[0.06] transition-all cursor-pointer text-left"
-                >
-                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                    <Smartphone size={22} className="text-purple-400" />
-                  </div>
-                  <div>
-                    <div className="text-[14px] font-semibold text-white">{a.verifyBySms}</div>
-                    <div className="text-[12px] text-kodo-text-muted mt-0.5">{verificationPending?.phone}</div>
-                  </div>
-                </button>
-              )}
-
-              {error && (
-                <div className="text-[12px] text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={cancelVerification}
-                className="flex items-center justify-center gap-2 mt-2 text-[13px] text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none"
-              >
-                <ArrowLeft size={14} /> {a.loginLink || 'Vissza'}
-              </button>
-            </div>
-          ) : (
             <div className="flex flex-col items-center gap-5">
               <div className="text-center">
-                <div className="text-[13px] text-kodo-text-muted mb-1">
-                  {method === 'email' ? a.verifyByEmail : a.verifyBySms}
+                <div className="flex items-center justify-center gap-2 text-[13px] text-kodo-text-muted mb-1">
+                  <Mail size={14} className="text-indigo-400" />
+                  {a.verifyByEmail}
                 </div>
-                <div className="text-[12px] text-kodo-text-dim">{destination}</div>
+                <div className="text-[12px] text-kodo-text-dim">{destination || verificationPending?.email}</div>
               </div>
 
               {/* Dev code hint */}
@@ -228,7 +193,7 @@ function VerificationScreen() {
                   {a.resendCode}
                 </button>
                 <button
-                  onClick={() => { setStep('choose'); setCode(['', '', '', '', '', '']); setError(''); }}
+                  onClick={cancelVerification}
                   className="text-[12px] text-kodo-text-dim cursor-pointer bg-transparent border-none hover:text-kodo-text transition-colors"
                 >
                   <ArrowLeft size={12} className="inline mr-1" />
@@ -236,7 +201,6 @@ function VerificationScreen() {
                 </button>
               </div>
             </div>
-          )}
         </div>
 
         <p className="text-center text-[11px] text-kodo-text-dim/50 mt-6">

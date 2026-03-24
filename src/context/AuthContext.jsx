@@ -67,10 +67,10 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const sendVerificationCode = useCallback(async (method) => {
+  const sendVerificationCode = useCallback(async () => {
     if (!verificationPending) return { success: false };
     try {
-      const data = await verificationApi.sendCode(verificationPending.userId, method);
+      const data = await verificationApi.sendCode(verificationPending.userId);
       return { success: true, destination: data.destination, devCode: data.dev_code };
     } catch (err) {
       return { success: false, error: err.message };
