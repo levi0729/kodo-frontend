@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Hash, Send, Pin, SmilePlus, Paperclip, AtSign, User, Search, Users, X, FileText, ChevronLeft, Loader2 } from 'lucide-react';
+import { Hash, Send, Pin, SmilePlus, Paperclip, AtSign, User, Search, Users, X, FileText, ChevronLeft, Loader2, UserPlus, Check, Clock } from 'lucide-react';
 import Avatar from '@/components/Avatar';
-import { users as usersApi, teams as teamsApi } from '@/services/api';
+import { users as usersApi, teams as teamsApi, friends as friendsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -26,6 +26,8 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
   const [allUsers, setAllUsers] = useState([]);
   const [userTeams, setUserTeams] = useState([]);
+  const [friendsList, setFriendsList] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [activeTeamId, setActiveTeamId] = useState(null);
@@ -37,21 +39,29 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const [mentionFilter, setMentionFilter] = useState('');
   const [emojiPickerMsgId, setEmojiPickerMsgId] = useState(null);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [showFindFriends, setShowFindFriends] = useState(false);
+  const [friendSearch, setFriendSearch] = useState('');
+  const [friendSearchResults, setFriendSearchResults] = useState([]);
+  const [sentRequests, setSentRequests] = useState(new Set());
 
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
-  // Fetch users and teams from API
+  // Fetch users, teams, and friends from API
   useEffect(() => {
     setDataLoading(true);
     Promise.all([
       usersApi.list().catch(() => ({ data: [] })),
       teamsApi.list().catch(() => ({ data: [] })),
-    ]).then(([usersRes, teamsRes]) => {
+      friendsApi.list().catch(() => ({ friends: [] })),
+      friendsApi.pending().catch(() => ({ pending_requests: [] })),
+    ]).then(([usersRes, teamsRes, friendsRes, pendingRes]) => {
       setAllUsers(usersRes.users || usersRes.data || []);
       setUserTeams(teamsRes.teams || teamsRes.data || []);
+      setFriendsList(friendsRes.friends || []);
+      setPendingRequests(pendingRes.pending_requests || []);
       setDataLoading(false);
     });
   }, []);
@@ -97,13 +107,15 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
   const activeTeam = userTeams.find(tm => tm.id === activeTeamId);
 
-  const allMembers = allUsers.filter(u => u.id !== currentUser?.id);
+  // DM list shows only accepted friends
+  const friendIds = new Set(friendsList.map(f => f.id));
+  const friendMembers = friendsList.filter(u => u.id !== currentUser?.id);
   const filteredMembers = dmSearch
-    ? allMembers.filter(u =>
+    ? friendMembers.filter(u =>
         u.display_name?.toLowerCase().includes(dmSearch.toLowerCase()) ||
         u.job_title?.toLowerCase().includes(dmSearch.toLowerCase())
       )
-    : allMembers;
+    : friendMembers;
 
   const dmUser = activeDmUserId ? getUserById(activeDmUserId) : null;
 
@@ -112,7 +124,12 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
   const mentionMembers = allUsers.filter(u => u.id !== currentUser?.id);
   const filteredMentionMembers = mentionFilter
-    ? mentionMembers.filter(u => u.display_name?.toLowerCase().includes(mentionFilter.toLowerCase()))
+    ? mentionMembers.filter(u => {
+        const filter = mentionFilter.toLowerCase();
+        const name = u.display_name?.toLowerCase() || '';
+        const uname = u.username?.toLowerCase() || '';
+        return name.includes(filter) || uname.includes(filter);
+      })
     : mentionMembers;
 
   const displayMessages = (activeDmUserId || activeTeamId) ? messages : [];
@@ -193,7 +210,8 @@ export default function MessagesPage({ dmUserId, teamId }) {
     setMessage(val);
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = val.slice(0, cursorPos);
-    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    // Support Unicode letters (Hungarian etc.) in mention filter
+    const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);
     if (atMatch) {
       setShowMentionPopup(true);
       setMentionFilter(atMatch[1]);
@@ -207,7 +225,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
     const cursorPos = inputRef.current?.selectionStart || message.length;
     const textBeforeCursor = message.slice(0, cursorPos);
     const textAfterCursor = message.slice(cursorPos);
-    const newBefore = textBeforeCursor.replace(/@(\w*)$/, `@${user.display_name} `);
+    const newBefore = textBeforeCursor.replace(/@([^\s@]*)$/, `@${user.display_name} `);
     setMessage(newBefore + textAfterCursor);
     setShowMentionPopup(false);
     setMentionFilter('');
@@ -221,32 +239,71 @@ export default function MessagesPage({ dmUserId, teamId }) {
     inputRef.current?.focus();
   };
 
+  // Friend search
+  useEffect(() => {
+    if (!friendSearch.trim()) {
+      setFriendSearchResults([]);
+      return;
+    }
+    const query = friendSearch.trim();
+    usersApi.list({ search: query }).then(res => {
+      const users = (res.users || []).filter(u => u.id !== currentUser?.id);
+      setFriendSearchResults(users);
+    }).catch(() => setFriendSearchResults([]));
+  }, [friendSearch, currentUser?.id]);
+
+  const handleSendFriendRequest = async (userId) => {
+    try {
+      await friendsApi.sendRequest(userId);
+      setSentRequests(prev => new Set([...prev, userId]));
+    } catch { /* already sent or already friends */ }
+  };
+
+  const handleAcceptRequest = async (friendRecord) => {
+    try {
+      await friendsApi.accept(friendRecord.id);
+      setPendingRequests(prev => prev.filter(r => r.id !== friendRecord.id));
+      // Refresh friends list
+      const res = await friendsApi.list().catch(() => ({ friends: [] }));
+      setFriendsList(res.friends || []);
+    } catch { /* ignore */ }
+  };
+
+  const handleDeclineRequest = async (friendRecord) => {
+    try {
+      await friendsApi.decline(friendRecord.id);
+      setPendingRequests(prev => prev.filter(r => r.id !== friendRecord.id));
+    } catch { /* ignore */ }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() && attachments.length === 0) return;
+    // Build message text — include attachment names if no text provided
+    let msgText = message.trim();
+    if (!msgText && attachments.length > 0) {
+      msgText = attachments.map(a => `[${a.name}]`).join(' ');
+    }
     try {
       if (activeDmUserId) {
-        await sendMessage(activeDmUserId, message);
+        await sendMessage(activeDmUserId, msgText);
       } else if (activeTeamId) {
-        await sendTeamMessage(activeTeamId, message);
+        await sendTeamMessage(activeTeamId, msgText);
       }
     } catch { /* handled by context */ }
-    // Process mention notifications
-    const mentionRegex = /@([\wÁáÉéÍíÓóÖöŐőÚúÜüŰű\s]+?)(?=\s@|\s*$)/g;
-    let match;
-    while ((match = mentionRegex.exec(message)) !== null) {
-      const mentionedName = match[1].trim();
-      const mentionedUser = allUsers.find(u =>
-        u.display_name?.toLowerCase() === mentionedName.toLowerCase()
-      );
-      if (mentionedUser && mentionedUser.id !== currentUser.id) {
-        addNotification({
-          notification_type: 'mention',
-          actor_id: currentUser.id,
-          target_user_id: mentionedUser.id,
-          title: t.messagesPage.mentioned.replace('{name}', currentUser.display_name),
-          body: message.length > 60 ? message.slice(0, 60) + '...' : message,
-        });
-      }
+    // Process mention notifications — match each @Name by looking up known display names
+    const mentionedUsers = allUsers.filter(u => {
+      if (u.id === currentUser.id) return false;
+      if (!u.display_name) return false;
+      return msgText.toLowerCase().includes('@' + u.display_name.toLowerCase());
+    });
+    for (const mentionedUser of mentionedUsers) {
+      addNotification({
+        notification_type: 'mention',
+        actor_id: currentUser.id,
+        target_user_id: mentionedUser.id,
+        title: t.messagesPage.mentioned.replace('{name}', currentUser.display_name),
+        body: msgText.length > 60 ? msgText.slice(0, 60) + '...' : msgText,
+      });
     }
     setMessage('');
     setAttachments([]);
@@ -295,7 +352,23 @@ export default function MessagesPage({ dmUserId, teamId }) {
           </div>
         </div>
         <div className="p-4 pt-0 flex-1 flex flex-col min-h-0">
-          <div className="kodo-section-title mt-4">{t.messagesPage.directMessages}</div>
+          <div className="flex items-center justify-between mt-4 mb-1">
+            <div className="kodo-section-title m-0">{t.messagesPage.directMessages}</div>
+            <div className="flex items-center gap-1">
+              {pendingRequests.length > 0 && (
+                <span className="text-[10px] bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {pendingRequests.length}
+                </span>
+              )}
+              <button
+                onClick={() => setShowFindFriends(true)}
+                className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none"
+                title={t.friends.findFriends}
+              >
+                <UserPlus size={14} />
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-2 px-2.5 py-1.5 mb-2 bg-white/[0.04] rounded-lg border border-white/[0.06] focus-within:border-kodo-accent/30 transition-colors">
             <Search size={13} className="text-kodo-text-dim flex-shrink-0" />
             <input
@@ -320,9 +393,19 @@ export default function MessagesPage({ dmUserId, teamId }) {
                 {u.display_name}
               </button>
             ))}
-            {filteredMembers.length === 0 && dmSearch && (
-              <div className="text-[12px] text-kodo-text-dim px-2.5 py-2">
-                {t.messagesPage.noResults}
+            {filteredMembers.length === 0 && (
+              <div className="text-center py-4">
+                <div className="text-[12px] text-kodo-text-dim px-2.5 py-2">
+                  {dmSearch ? t.messagesPage.noResults : t.friends.noFriends}
+                </div>
+                {!dmSearch && (
+                  <button
+                    onClick={() => setShowFindFriends(true)}
+                    className="text-[12px] text-indigo-400 font-medium cursor-pointer bg-transparent border-none hover:text-indigo-300 transition-colors"
+                  >
+                    {t.friends.findFriends}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -642,6 +725,105 @@ export default function MessagesPage({ dmUserId, teamId }) {
           )}
         </div>
       </div>
+
+      {/* Find Friends Modal */}
+      {showFindFriends && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowFindFriends(false)}>
+          <div className="bg-[#1a1a24] border border-white/[0.08] rounded-2xl w-full max-w-[440px] max-h-[80vh] overflow-hidden animate-fade-in-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+              <h2 className="text-[16px] font-semibold text-white">{t.friends.findFriends}</h2>
+              <button onClick={() => setShowFindFriends(false)} className="text-kodo-text-dim hover:text-white transition-colors cursor-pointer bg-transparent border-none p-1">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Pending requests */}
+            {pendingRequests.length > 0 && (
+              <div className="p-4 border-b border-white/[0.06]">
+                <div className="text-[11px] font-semibold text-kodo-text-dim uppercase tracking-[0.05em] mb-2">
+                  {t.friends.friendRequests} ({pendingRequests.length})
+                </div>
+                <div className="flex flex-col gap-2">
+                  {pendingRequests.map(req => {
+                    const sender = req.user_one || req.sender;
+                    if (!sender) return null;
+                    return (
+                      <div key={req.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.03]">
+                        <Avatar user={sender} size={32} showStatus />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium text-kodo-text truncate">{sender.display_name}</div>
+                          <div className="text-[11px] text-kodo-text-dim truncate">{sender.email}</div>
+                        </div>
+                        <button
+                          onClick={() => handleAcceptRequest(req)}
+                          className="px-2.5 py-1 rounded-lg bg-green-500/20 text-green-400 text-[11px] font-medium cursor-pointer border-none hover:bg-green-500/30 transition-colors"
+                        >
+                          {t.friends.accept}
+                        </button>
+                        <button
+                          onClick={() => handleDeclineRequest(req)}
+                          className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 text-[11px] font-medium cursor-pointer border-none hover:bg-red-500/30 transition-colors"
+                        >
+                          {t.friends.decline}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="p-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.04] rounded-lg border border-white/[0.06] focus-within:border-kodo-accent/30 transition-colors mb-3">
+                <Search size={14} className="text-kodo-text-dim flex-shrink-0" />
+                <input
+                  value={friendSearch}
+                  onChange={e => setFriendSearch(e.target.value)}
+                  placeholder={t.friends.searchPlaceholder}
+                  className="flex-1 bg-transparent border-none outline-none text-[13px] text-kodo-text placeholder:text-kodo-text-dim"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto">
+                {friendSearch.trim() && friendSearchResults.length === 0 && (
+                  <div className="text-center text-[12px] text-kodo-text-dim py-4">{t.friends.noResults}</div>
+                )}
+                {friendSearchResults.map(user => {
+                  const isFriend = friendIds.has(user.id);
+                  const isPending = sentRequests.has(user.id);
+                  return (
+                    <div key={user.id} className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                      <Avatar user={user} size={34} showStatus />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-kodo-text truncate">{user.display_name}</div>
+                        <div className="text-[11px] text-kodo-text-dim truncate">{user.email}</div>
+                      </div>
+                      {isFriend ? (
+                        <span className="flex items-center gap-1 text-[11px] text-green-400 font-medium">
+                          <Check size={12} /> {t.friends.alreadyFriend}
+                        </span>
+                      ) : isPending ? (
+                        <span className="flex items-center gap-1 text-[11px] text-yellow-400 font-medium">
+                          <Clock size={12} /> {t.friends.requestSent}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleSendFriendRequest(user.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-kodo-accent/20 text-indigo-400 text-[11px] font-medium cursor-pointer border-none hover:bg-kodo-accent/30 transition-colors"
+                        >
+                          <UserPlus size={12} /> {t.friends.sendRequest}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

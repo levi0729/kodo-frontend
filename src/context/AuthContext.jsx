@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { auth as authApi } from '@/services/api';
+import { auth as authApi, verification as verificationApi, setToken } from '@/services/api';
 
 const AuthContext = createContext(null);
+
+const DEVICE_TOKEN_KEY = 'kodo_device_token';
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -12,6 +14,10 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+
+  // Verification state
+  const [verificationPending, setVerificationPending] = useState(null);
+  // { userId, email, phone, hasPhone }
 
   // Restore session on mount
   useEffect(() => {
@@ -36,7 +42,21 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const data = await authApi.login(email, password);
+      const deviceToken = localStorage.getItem(DEVICE_TOKEN_KEY);
+      const data = await authApi.login(email, password, deviceToken);
+
+      if (data.verification_required) {
+        // Password was correct but 2FA is needed
+        setVerificationPending({
+          userId: data.user_id,
+          email: data.email,
+          phone: data.phone,
+          hasPhone: data.has_phone,
+        });
+        return { success: false, verificationRequired: true };
+      }
+
+      // Trusted device — login completed directly
       setCurrentUser(data.user);
       localStorage.setItem('kodo_user', JSON.stringify(data.user));
       return { success: true, user: data.user };
@@ -47,7 +67,47 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const register = useCallback(async ({ displayName, email, password, passwordConfirmation, jobTitle, username }) => {
+  const sendVerificationCode = useCallback(async (method) => {
+    if (!verificationPending) return { success: false };
+    try {
+      const data = await verificationApi.sendCode(verificationPending.userId, method);
+      return { success: true, destination: data.destination, devCode: data.dev_code };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, [verificationPending]);
+
+  const verifyCode = useCallback(async (code, rememberDevice = false) => {
+    if (!verificationPending) return { success: false };
+    setLoading(true);
+    try {
+      const data = await verificationApi.verifyCode(verificationPending.userId, code, rememberDevice);
+
+      if (data.token) {
+        setToken(data.token);
+      }
+
+      // Save device token if remember was requested
+      if (data.device_token) {
+        localStorage.setItem(DEVICE_TOKEN_KEY, data.device_token);
+      }
+
+      setCurrentUser(data.user);
+      localStorage.setItem('kodo_user', JSON.stringify(data.user));
+      setVerificationPending(null);
+      return { success: true, user: data.user };
+    } catch (err) {
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [verificationPending]);
+
+  const cancelVerification = useCallback(() => {
+    setVerificationPending(null);
+  }, []);
+
+  const register = useCallback(async ({ displayName, email, password, passwordConfirmation, jobTitle, phoneNumber, username }) => {
     setLoading(true);
     try {
       const data = await authApi.register({
@@ -57,6 +117,7 @@ export function AuthProvider({ children }) {
         password_confirmation: passwordConfirmation || password,
         display_name: displayName,
         job_title: jobTitle || '',
+        phone_number: phoneNumber || '',
       });
       setCurrentUser(data.user);
       localStorage.setItem('kodo_user', JSON.stringify(data.user));
@@ -108,6 +169,10 @@ export function AuthProvider({ children }) {
       refreshUser,
       isLoggedIn: !!currentUser,
       loading,
+      verificationPending,
+      sendVerificationCode,
+      verifyCode,
+      cancelVerification,
     }}>
       {children}
     </AuthContext.Provider>

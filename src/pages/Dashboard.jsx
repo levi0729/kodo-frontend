@@ -269,7 +269,7 @@ export default function Dashboard({ onNavigate }) {
     Promise.all([
       participantsApi.list('project', projectId).catch(() => ({ data: [] })),
       calendarApi.list().catch(() => ({ data: [] })),
-      timeEntriesApi.list({ project_id: projectId }).catch(() => ({ data: [] })),
+      timeEntriesApi.list({ project_id: projectId, team: 1, per_page: 100 }).catch(() => ({ data: [] })),
     ]).then(([membersRes, eventsRes, entriesRes]) => {
       setTeamMembers((membersRes.participants || membersRes.data || []).map(p => p.user || p));
       setCalendarEvents(eventsRes.calendar_events || eventsRes.data || []);

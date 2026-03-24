@@ -71,19 +71,21 @@ async function request(endpoint, options = {}) {
 // ── Auth ──────────────────────────────────────────────────
 
 export const auth = {
-  async login(email, password) {
+  async login(email, password, deviceToken = null) {
+    const body = { email, password };
+    if (deviceToken) body.device_token = deviceToken;
     const data = await request('/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body,
     });
-    setToken(data.token);
+    if (data.token) setToken(data.token);
     return data;
   },
 
-  async register({ username, email, password, password_confirmation, display_name, job_title }) {
+  async register({ username, email, password, password_confirmation, display_name, job_title, phone_number }) {
     const data = await request('/auth/register', {
       method: 'POST',
-      body: { username, email, password, password_confirmation, display_name, job_title },
+      body: { username, email, password, password_confirmation, display_name, job_title, phone_number },
     });
     setToken(data.token);
     return data;
@@ -290,6 +292,10 @@ export const friends = {
     return request('/friends/pending');
   },
 
+  async sent() {
+    return request('/friends/sent');
+  },
+
   async sendRequest(userId) {
     return request('/friends/request', { method: 'POST', body: { user_id: userId } });
   },
@@ -405,6 +411,22 @@ export const notifications = {
   },
   async destroy(id) {
     return request(`/notifications/${id}`, { method: 'DELETE' });
+  },
+};
+
+// ── Verification (2FA) ───────────────────────────────────
+
+export const verification = {
+  async sendCode(userId, method) {
+    return request('/verification/send', { method: 'POST', body: { user_id: userId, method } });
+  },
+
+  async verifyCode(userId, code, rememberDevice = false) {
+    return request('/verification/verify', { method: 'POST', body: { user_id: userId, code, remember_device: rememberDevice } });
+  },
+
+  async checkDevice(userId, deviceToken) {
+    return request('/verification/check-device', { method: 'POST', body: { user_id: userId, device_token: deviceToken } });
   },
 };
 
