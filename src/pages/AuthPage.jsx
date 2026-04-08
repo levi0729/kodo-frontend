@@ -248,9 +248,9 @@ export default function AuthPage() {
     } else {
       if (!displayName.trim()) { setError(a.errors.nameRequired); return; }
       if (!email.trim()) { setError(a.errors.emailRequired); return; }
-      if (!phoneNumber.trim()) { setError(a.errors?.phoneRequired || 'Add meg a telefonszámod'); return; }
-      if (password.length < 8) { setError(a.errors?.passwordTooShort || 'A jelszónak legalább 8 karakter hosszúnak kell lennie'); return; }
-      if (password !== passwordConfirm) { setError('A jelszavak nem egyeznek'); return; }
+      if (!phoneNumber.trim()) { setError(a.errors?.phoneRequired); return; }
+      if (password.length < 8) { setError(a.errors?.passwordTooShort); return; }
+      if (password !== passwordConfirm) { setError(a.errors?.passwordMismatch); return; }
 
       const result = await register({
         displayName: displayName.trim(),

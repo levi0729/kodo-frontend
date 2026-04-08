@@ -39,6 +39,13 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Handle session expiry from API interceptor
+  useEffect(() => {
+    const handleExpired = () => setCurrentUser(null);
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, []);
+
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
@@ -114,7 +121,7 @@ export function AuthProvider({ children }) {
         username: username || email.split('@')[0],
         email,
         password,
-        password_confirmation: passwordConfirmation || password,
+        password_confirmation: passwordConfirmation,
         display_name: displayName,
         job_title: jobTitle || '',
         phone_number: phoneNumber || '',

@@ -32,13 +32,15 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  const pages = {
-    dashboard: <Dashboard onNavigate={handleNavigate} />,
-    teams: <TeamsPage onNavigate={handleNavigate} />,
-    task: <TasksPage highlightTaskId={navContext?.highlightTaskId} />,
-    messages: <MessagesPage key={`${navContext?.teamId || 'default'}-${navContext?.channelId || ''}-${navContext?.dmUserId || ''}`} dmUserId={navContext?.dmUserId} teamId={navContext?.teamId} channelId={navContext?.channelId} />,
-    calendar: <CalendarPage />,
-    settings: <SettingsPage />,
+  const renderPage = () => {
+    switch (activePage) {
+      case 'teams': return <TeamsPage onNavigate={handleNavigate} />;
+      case 'task': return <TasksPage highlightTaskId={navContext?.highlightTaskId} />;
+      case 'messages': return <MessagesPage key={`${navContext?.teamId || 'default'}-${navContext?.channelId || ''}-${navContext?.dmUserId || ''}`} dmUserId={navContext?.dmUserId} teamId={navContext?.teamId} channelId={navContext?.channelId} />;
+      case 'calendar': return <CalendarPage />;
+      case 'settings': return <SettingsPage />;
+      default: return <Dashboard onNavigate={handleNavigate} />;
+    }
   };
 
   return (
@@ -50,7 +52,7 @@ function AppContent() {
         <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} />
 
         <div className="flex-1 overflow-y-auto px-3 py-3 md:px-8 md:py-6">
-          {pages[activePage] || pages.dashboard}
+          {renderPage()}
         </div>
       </main>
     </div>

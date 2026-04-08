@@ -306,7 +306,10 @@ export default function MessagesPage({ dmUserId, teamId }) {
       });
     }
     setMessage('');
-    setAttachments([]);
+    setAttachments(prev => {
+      prev.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview); });
+      return [];
+    });
     setShowMentionPopup(false);
   };
 

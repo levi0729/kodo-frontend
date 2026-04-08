@@ -40,7 +40,8 @@ async function request(endpoint, options = {}) {
   if (res.status === 401) {
     setToken(null);
     localStorage.removeItem('kodo_user');
-    window.location.reload();
+    // Dispatch event so AuthContext can handle logout without a race condition
+    window.dispatchEvent(new Event('auth:expired'));
     throw new Error('Session expired. Please log in again.');
   }
 

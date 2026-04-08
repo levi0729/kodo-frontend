@@ -268,9 +268,11 @@ const translations = {
         emailRequired: 'Add meg az email címed',
         passwordTooShort: 'A jelszó legalább 8 karakter legyen',
         phoneRequired: 'Add meg a telefonszámod',
+        passwordMismatch: 'A jelszavak nem egyeznek',
       },
     },
     common: { search: 'Keresés...', cancel: 'Mégse', save: 'Mentés', create: 'Létrehozás', delete: 'Törlés', members: 'Tagok' },
+    serverBanner: 'A backend szerver nem elérhető. Indítsd el a szervert vagy ellenőrizd a hálózati beállításokat.',
   },
 
   en: {
@@ -479,8 +481,9 @@ const translations = {
       rememberDevice: 'Remember this device for 30 days',
       codeSent: 'Code sent!',
       invalidCode: 'Invalid code',
-      errors: { nameRequired: 'Please enter your name', emailRequired: 'Please enter your email', passwordTooShort: 'Password must be at least 8 characters', phoneRequired: 'Please enter your phone number' },
+      errors: { nameRequired: 'Please enter your name', emailRequired: 'Please enter your email', passwordTooShort: 'Password must be at least 8 characters', phoneRequired: 'Please enter your phone number', passwordMismatch: 'Passwords do not match' },
     },
+    serverBanner: 'Backend server is unreachable. Please start the server or check your network settings.',
     badges: {
       priority: { high: 'High', medium: 'Medium', low: 'Low' },
       status: { todo: 'To Do', in_progress: 'In Progress', in_review: 'Review', done: 'Done', active: 'Active', planning: 'Planning' },

@@ -278,7 +278,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
             <button
               disabled={!newProjectName.trim() || !newProjectPassword.trim()}
               onClick={() => {
-                addProject(newProjectName.trim(), newProjectPassword.trim());
+                addProject(newProjectName.trim(), '', newProjectPassword.trim());
                 setShowCreateModal(false);
                 setNewProjectName('');
                 setNewProjectPassword('');

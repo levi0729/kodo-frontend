@@ -43,17 +43,19 @@ export function ProjectProvider({ children }) {
 
   const activeProject = userProjects.find(p => p.id === activeProjectId) || userProjects[0] || null;
 
-  const addProject = useCallback(async (name, description = '') => {
+  const addProject = useCallback(async (name, description = '', password = '') => {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const data = await projectsApi.create({
+      const payload = {
         name,
         description,
         color: ['#6366f1','#14b8a6','#ec4899','#f59e0b','#ef4444','#22c55e','#a855f7','#3b82f6'][Math.floor(Math.random() * 8)],
         status: 'active',
         project_type: 'kanban',
-      });
+      };
+      if (password) payload.password = password;
+      const data = await projectsApi.create(payload);
       const newProject = data.project;
       setUserProjects(prev => [newProject, ...prev]);
       setActiveProjectId(newProject.id);
