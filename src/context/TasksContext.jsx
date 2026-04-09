@@ -15,14 +15,20 @@ export function TasksProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const PER_PAGE = 100;
 
   const fetchTasks = useCallback(async () => {
     if (!isLoggedIn || !activeProjectId) return;
     setLoading(true);
     setError(null);
+    setCurrentPage(1);
     try {
-      const data = await tasksApi.list({ project_id: activeProjectId, per_page: 100 });
-      setTasks(data.tasks || []);
+      const data = await tasksApi.list({ project_id: activeProjectId, per_page: PER_PAGE, page: 1 });
+      const list = data.tasks || [];
+      setTasks(list);
+      setHasMore(list.length >= PER_PAGE);
     } catch (err) {
       setError(err.message);
       toast.error('Failed to load tasks: ' + err.message);
@@ -30,6 +36,20 @@ export function TasksProvider({ children }) {
       setLoading(false);
     }
   }, [isLoggedIn, activeProjectId]);
+
+  const loadMoreTasks = useCallback(async () => {
+    if (!isLoggedIn || !activeProjectId || !hasMore) return;
+    const nextPage = currentPage + 1;
+    try {
+      const data = await tasksApi.list({ project_id: activeProjectId, per_page: PER_PAGE, page: nextPage });
+      const list = data.tasks || [];
+      setTasks(prev => [...prev, ...list]);
+      setCurrentPage(nextPage);
+      setHasMore(list.length >= PER_PAGE);
+    } catch (err) {
+      toast.error('Failed to load more tasks');
+    }
+  }, [isLoggedIn, activeProjectId, hasMore, currentPage]);
 
   useEffect(() => {
     if (isLoggedIn && activeProjectId) {
@@ -116,9 +136,11 @@ export function TasksProvider({ children }) {
     updateTask,
     deleteTask,
     fetchTasks,
+    loadMoreTasks,
+    hasMore,
     loading,
     error,
-  }), [tasks, advanceTask, createTask, updateTask, deleteTask, fetchTasks, loading, error]);
+  }), [tasks, advanceTask, createTask, updateTask, deleteTask, fetchTasks, loadMoreTasks, hasMore, loading, error]);
 
   return (
     <TasksContext.Provider value={value}>

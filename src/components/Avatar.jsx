@@ -10,18 +10,27 @@ export default function Avatar({ user, size = 36, showStatus = false, className 
 
   return (
     <div className={clsx('relative flex-shrink-0', className)} style={{ width: size, height: size }}>
-      <div
-        className="rounded-full flex items-center justify-center text-white font-semibold"
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: bg,
-          fontSize: size * 0.38,
-          letterSpacing: '0.02em',
-        }}
-      >
-        {initials}
-      </div>
+      {user.avatar_url ? (
+        <img
+          src={user.avatar_url}
+          alt={user.display_name}
+          className="rounded-full object-cover"
+          style={{ width: size, height: size }}
+        />
+      ) : (
+        <div
+          className="rounded-full flex items-center justify-center text-white font-semibold"
+          style={{
+            width: size,
+            height: size,
+            backgroundColor: bg,
+            fontSize: size * 0.38,
+            letterSpacing: '0.02em',
+          }}
+        >
+          {initials}
+        </div>
+      )}
       {showStatus && (
         <div
           className="absolute -bottom-px -right-px rounded-full border-2 border-kodo-bg"

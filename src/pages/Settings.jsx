@@ -57,6 +57,15 @@ export default function SettingsPage() {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    settingsApi.get().then(res => {
+      const s = res.settings || res.data || {};
+      if (s.push_notifications !== undefined) setPushNotif(!!s.push_notifications);
+      if (s.email_notifications !== undefined) setEmailNotif(!!s.email_notifications);
+      if (s.do_not_disturb !== undefined) setDnd(!!s.do_not_disturb);
+    }).catch(() => {});
+  }, []);
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {

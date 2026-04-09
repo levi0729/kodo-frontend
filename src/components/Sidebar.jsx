@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Users, FolderKanban, MessageSquare,
   CalendarDays, Settings, ChevronDown,
-  Check, Plus, X, Eye, EyeOff, LogOut
+  Check, Plus, X, Eye, EyeOff, LogOut,
+  Clock, UserPlus, Activity
 } from 'lucide-react';
 import clsx from 'clsx';
 import Avatar from './Avatar';
@@ -10,6 +11,15 @@ import { useProject } from '@/context/ProjectContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { users as usersApi } from '@/services/api';
+
+const STATUS_OPTIONS = [
+  { key: 'online', color: '#22c55e' },
+  { key: 'away', color: '#f59e0b' },
+  { key: 'busy', color: '#ef4444' },
+  { key: 'dnd', color: '#ef4444' },
+  { key: 'offline', color: '#52525b' },
+];
 
 const NAV_ICONS = {
   dashboard: LayoutDashboard,
@@ -17,15 +27,21 @@ const NAV_ICONS = {
   task: FolderKanban,
   teams: Users,
   messages: MessageSquare,
+  'time-tracking': Clock,
+  friends: UserPlus,
+  activity: Activity,
 };
 
-const NAV_KEYS = ['dashboard', 'calendar', 'task', 'teams', 'messages'];
+const NAV_KEYS = ['dashboard', 'calendar', 'task', 'teams', 'messages', 'time-tracking', 'friends', 'activity'];
 const NAV_LABEL_KEYS = {
   dashboard: 'dashboard',
   calendar: 'calendar',
   task: 'tasks',
   teams: 'teams',
   messages: 'messages',
+  'time-tracking': 'timeTracking',
+  friends: 'friends',
+  activity: 'activity',
 };
 
 export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileClose }) {
@@ -190,7 +206,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
             {isExpanded && (
               <div className="min-w-0 flex-1">
                 <div className="text-[12px] font-semibold text-kodo-text truncate">{currentUser?.display_name}</div>
-                <div className="text-[10px] text-kodo-text-dim">{t.sidebar.online}</div>
+                <div className="text-[10px] text-kodo-text-dim">{t.sidebar.statusLabels[currentUser?.presence_status] || t.sidebar.online}</div>
               </div>
             )}
           </div>
@@ -213,6 +229,29 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
               <div className="text-[11px] text-kodo-text-muted mb-3 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
                 {currentUser?.job_title || t.sidebar.noPosition}
+              </div>
+              <div className="mb-3 pb-3 border-b border-white/[0.06]">
+                <div className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider mb-2">{t.sidebar.status}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {STATUS_OPTIONS.map(opt => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        usersApi.updateStatus(opt.key).catch(() => {});
+                        if (currentUser) currentUser.presence_status = opt.key;
+                        setShowUserPopup(false);
+                      }}
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium cursor-pointer border transition-all ${
+                        currentUser?.presence_status === opt.key
+                          ? 'bg-white/[0.08] border-white/[0.15] text-white'
+                          : 'bg-transparent border-transparent text-kodo-text-muted hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: opt.color }} />
+                      {t.sidebar.statusLabels[opt.key]}
+                    </button>
+                  ))}
+                </div>
               </div>
               <button
                 onClick={() => { setShowUserPopup(false); logout(); }}

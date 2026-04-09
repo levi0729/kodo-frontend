@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2 } from 'lucide-react';
+import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
 import { teams as teamsApi, users as usersApi, participants as participantsApi } from '@/services/api';
@@ -14,6 +14,8 @@ export default function TeamsPage({ onNavigate }) {
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [showNewTeamModal, setShowNewTeamModal] = useState(false);
   const [showAddMember, setShowAddMember] = useState(null);
+  const [editingTeam, setEditingTeam] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', color: '' });
   const { currentUser } = useAuth();
   const toast = useToast();
   const [teams, setTeams] = useState([]);
@@ -78,6 +80,49 @@ export default function TeamsPage({ onNavigate }) {
     onNavigate('messages', { teamId: team.id });
   };
 
+  const TEAM_COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#ef4444', '#22c55e', '#8b5cf6', '#f97316'];
+
+  const startEditing = (team) => {
+    setEditingTeam(team.id);
+    setEditForm({ name: team.name, description: team.description || '', color: team.color || '#6366f1' });
+  };
+
+  const handleEditTeam = async (teamId) => {
+    try {
+      await teamsApi.update(teamId, editForm);
+      const teamsRes = await teamsApi.list().catch(() => ({ teams: [] }));
+      setTeams(teamsRes.teams || teamsRes.data || []);
+      setEditingTeam(null);
+      toast.success(t.teamsPage.teamUpdated);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleLeaveTeam = async (teamId) => {
+    if (!confirm(t.teamsPage.confirmLeave)) return;
+    try {
+      await teamsApi.leave(teamId);
+      setTeams(prev => prev.filter(t => t.id !== teamId));
+      setExpandedTeam(null);
+      toast.success(t.teamsPage.teamLeft);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteTeam = async (teamId) => {
+    if (!confirm(t.teamsPage.confirmDelete)) return;
+    try {
+      await teamsApi.destroy(teamId);
+      setTeams(prev => prev.filter(t => t.id !== teamId));
+      setExpandedTeam(null);
+      toast.success(t.teamsPage.teamDeleted);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   if (teamsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -124,27 +169,73 @@ export default function TeamsPage({ onNavigate }) {
               }`}
               style={isExpanded ? { borderColor: team.color + '40' } : {}}
             >
-              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ backgroundColor: team.color }} />
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ backgroundColor: editingTeam === team.id ? editForm.color : team.color }} />
 
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[16px] font-bold"
-                    style={{ backgroundColor: team.color + '18', color: team.color }}
-                  >
-                    {team.name[0]}
+              {editingTeam === team.id ? (
+                <div className="mb-3" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      value={editForm.name}
+                      onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                      className="flex-1 px-2 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-[14px] text-white font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder={t.teamsPage.editTeam}
+                    />
                   </div>
-                  <div>
-                    <div className="text-[15px] font-semibold text-white">{team.name}</div>
-                    <div className="text-[12px] text-kodo-text-muted">{team.description}</div>
+                  <input
+                    value={editForm.description}
+                    onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                    className="w-full px-2 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-[12px] text-kodo-text-muted mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    placeholder="Description"
+                  />
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {TEAM_COLORS.map(c => (
+                      <button key={c} type="button" onClick={() => setEditForm(p => ({ ...p, color: c }))}
+                        className={`w-6 h-6 rounded-full border-2 cursor-pointer transition-all ${editForm.color === c ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEditTeam(team.id)}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-[11px] font-medium cursor-pointer border-none hover:bg-indigo-600 transition-colors">
+                      {t.settings?.save || 'Save'}
+                    </button>
+                    <button onClick={() => setEditingTeam(null)}
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.06] text-kodo-text-muted text-[11px] font-medium cursor-pointer border-none hover:bg-white/[0.1] transition-colors">
+                      {t.newTeamModal?.cancel || 'Cancel'}
+                    </button>
                   </div>
                 </div>
-                {team.visibility === 'private' ? (
-                  <Lock size={14} className="text-kodo-text-dim" />
-                ) : (
-                  <Globe size={14} className="text-kodo-text-dim" />
-                )}
-              </div>
+              ) : (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[16px] font-bold"
+                      style={{ backgroundColor: team.color + '18', color: team.color }}
+                    >
+                      {team.name[0]}
+                    </div>
+                    <div>
+                      <div className="text-[15px] font-semibold text-white">{team.name}</div>
+                      <div className="text-[12px] text-kodo-text-muted">{team.description}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {team.owner_id === currentUser?.id && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startEditing(team); }}
+                        className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer border-none bg-transparent text-kodo-text-dim hover:text-indigo-400"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                    {team.visibility === 'private' ? (
+                      <Lock size={14} className="text-kodo-text-dim" />
+                    ) : (
+                      <Globe size={14} className="text-kodo-text-dim" />
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-4 mt-4">
                 <AvatarStack users={members} size={28} max={4} />
@@ -221,7 +312,7 @@ export default function TeamsPage({ onNavigate }) {
                     ))}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                  <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-col gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -232,6 +323,25 @@ export default function TeamsPage({ onNavigate }) {
                       <MessageSquare size={15} />
                       {t.teamsPage.startChat}
                     </button>
+                    <div className="flex gap-2">
+                      {team.owner_id === currentUser?.id ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          {t.teamsPage.deleteTeam}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleLeaveTeam(team.id); }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-orange-500/10 text-orange-400 text-[12px] font-medium cursor-pointer border-none hover:bg-orange-500/20 transition-colors"
+                        >
+                          <LogOut size={13} />
+                          {t.teamsPage.leaveTeam}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

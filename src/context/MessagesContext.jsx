@@ -81,13 +81,11 @@ export function MessagesProvider({ children }) {
     return teamId;
   }, [openRoom]);
 
-  // ── Polling for new messages ────────────────────────────
+  // ── Polling for new messages (pauses when tab is hidden) ─
 
-  useEffect(() => {
-    if (!activeRoomId || !isLoggedIn) {
-      if (pollRef.current) clearInterval(pollRef.current);
-      return;
-    }
+  const startPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (!activeRoomId || !isLoggedIn) return;
 
     pollRef.current = setInterval(async () => {
       try {
@@ -104,11 +102,24 @@ export function MessagesProvider({ children }) {
         }
       } catch { /* silent */ }
     }, POLL_INTERVAL);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
   }, [activeRoomId, isLoggedIn]);
+
+  useEffect(() => {
+    startPolling();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [startPolling]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (pollRef.current) clearInterval(pollRef.current);
+      } else {
+        startPolling();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [startPolling]);
 
   // ── Send message ────────────────────────────────────────
 

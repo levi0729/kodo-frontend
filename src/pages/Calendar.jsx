@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Search,
-  Video, MapPin, X, Clock, Users, Loader2
+  Video, MapPin, X, Clock, Users, Loader2, Pencil, Trash2
 } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
@@ -121,9 +121,10 @@ function EventCard({ event, pos, onSelect, getUserById }) {
 }
 
 /* EventDetailPopup */
-function EventDetailPopup({ event, onClose, getUserById }) {
+function EventDetailPopup({ event, onClose, onEdit, onDelete, getUserById, currentUserId }) {
   const { t } = useTheme();
   const cal = t.calendarPage;
+  const isOrganizer = event.organizer_id === currentUserId;
   const ref = useRef(null);
   const s = new Date(event.start_time);
   const e = new Date(event.end_time);
@@ -201,6 +202,25 @@ function EventDetailPopup({ event, onClose, getUserById }) {
               </div>
             </div>
           )}
+
+          {isOrganizer && (
+            <div className="flex gap-2 mt-4 pt-3 border-t border-white/[0.06]">
+              <button
+                onClick={() => { onEdit(event); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/20 transition-colors"
+              >
+                <Pencil size={13} />
+                {cal.editEvent}
+              </button>
+              <button
+                onClick={() => onDelete(event.id)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
+              >
+                <Trash2 size={13} />
+                {cal.deleteEvent}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -208,7 +228,7 @@ function EventDetailPopup({ event, onClose, getUserById }) {
 }
 
 /* NewEventModal */
-function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, members }) {
+function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeProject, defaultDate, members }) {
   const { currentUser } = useAuth();
   const { t } = useTheme();
   const cal = t.calendarPage.newEventModal;
@@ -221,7 +241,27 @@ function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, 
   const [errors, setErrors] = useState({});
   const ref = useRef(null);
 
-  useEffect(() => { if (isOpen) setForm(f => ({ ...f, date: dateStr })); }, [dateStr, isOpen]);
+  useEffect(() => {
+    if (isOpen && editEvent) {
+      const s = new Date(editEvent.start_time);
+      const e = new Date(editEvent.end_time);
+      setForm({
+        title: editEvent.title || '',
+        description: editEvent.description || '',
+        date: toDateStr(s),
+        startTime: `${String(s.getHours()).padStart(2,'0')}:${String(s.getMinutes()).padStart(2,'0')}`,
+        endTime: `${String(e.getHours()).padStart(2,'0')}:${String(e.getMinutes()).padStart(2,'0')}`,
+        location: editEvent.location || '',
+        isOnline: !!editEvent.is_online_meeting,
+        meetingUrl: editEvent.meeting_url || '',
+        color: editEvent.color || EVENT_COLORS[0],
+        attendees: editEvent.attendees || [],
+        type: editEvent.type || 'meetings',
+      });
+    } else if (isOpen) {
+      setForm(f => ({ ...f, date: dateStr }));
+    }
+  }, [isOpen, editEvent, dateStr]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -238,7 +278,7 @@ function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, 
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
-    await onCreate({
+    const payload = {
       team_id: null,
       title: form.title,
       description: form.description,
@@ -252,7 +292,13 @@ function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, 
       reminder_minutes: 15,
       color: form.color,
       attendees: form.attendees.length ? form.attendees : [currentUser.id],
-    });
+    };
+
+    if (editEvent) {
+      await onUpdate(editEvent.id, payload);
+    } else {
+      await onCreate(payload);
+    }
     setForm(blankForm);
     onClose();
   };
@@ -267,7 +313,7 @@ function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, 
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div ref={ref} className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
-          <h2 className="text-[18px] font-semibold text-white">{cal.title}</h2>
+          <h2 className="text-[18px] font-semibold text-white">{editEvent ? cal.editTitle : cal.title}</h2>
           <button onClick={onClose} className="text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none p-0">
             <X size={20} />
           </button>
@@ -374,7 +420,7 @@ function NewEventModal({ isOpen, onClose, onCreate, activeProject, defaultDate, 
             </button>
             <button type="submit"
               className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium flex items-center justify-center gap-1.5">
-              <Plus size={14} /> {cal.create}
+              {!editEvent && <Plus size={14} />} {editEvent ? cal.save : cal.create}
             </button>
           </div>
         </form>
@@ -408,6 +454,7 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -469,6 +516,8 @@ export default function CalendarPage() {
   };
 
   const goToday = () => setCurrentDate(new Date());
+  const { currentUser } = useAuth();
+
   const handleCreate = async (eventData) => {
     try {
       const res = await calendarApi.create(eventData);
@@ -477,6 +526,34 @@ export default function CalendarPage() {
     } catch (err) {
       toast.error(err.message || 'Failed to create event');
     }
+  };
+
+  const handleUpdate = async (eventId, eventData) => {
+    try {
+      const res = await calendarApi.update(eventId, eventData);
+      const updated = res.calendar_event || res.data;
+      setEvents(prev => prev.map(e => e.id === eventId ? updated : e));
+      toast.success(cal.eventUpdated);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update event');
+    }
+  };
+
+  const handleDelete = async (eventId) => {
+    if (!confirm(cal.confirmDelete)) return;
+    try {
+      await calendarApi.destroy(eventId);
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+      setSelectedEvent(null);
+      toast.success(cal.eventDeleted);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete event');
+    }
+  };
+
+  const handleEditStart = (event) => {
+    setEditingEvent(event);
+    setShowModal(true);
   };
 
   function fmtRange(mode, d) {
@@ -670,13 +747,22 @@ export default function CalendarPage() {
       )}
 
       {selectedEvent && (
-        <EventDetailPopup event={selectedEvent} onClose={() => setSelectedEvent(null)} getUserById={getUserById} />
+        <EventDetailPopup
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onEdit={handleEditStart}
+          onDelete={handleDelete}
+          getUserById={getUserById}
+          currentUserId={currentUser?.id}
+        />
       )}
 
       <NewEventModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => { setShowModal(false); setEditingEvent(null); }}
         onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        editEvent={editingEvent}
         activeProject={activeProject}
         defaultDate={currentDate}
         members={projectMembers}
