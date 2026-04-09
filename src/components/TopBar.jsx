@@ -85,6 +85,7 @@ export default function TopBar({ activePage, onMenuToggle }) {
       <div className="flex items-center gap-2 text-[13px]">
         <button
           onClick={onMenuToggle}
+          aria-label="Toggle menu"
           className="p-2 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none lg:hidden"
         >
           <Menu size={20} />
@@ -97,6 +98,7 @@ export default function TopBar({ activePage, onMenuToggle }) {
       <div className="flex items-center gap-1 relative" ref={dropdownRef}>
         <button
           onClick={() => setNotifOpen(!notifOpen)}
+          aria-label={t.topbar.notifications}
           className="p-2 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors relative"
         >
           <Bell size={18} />

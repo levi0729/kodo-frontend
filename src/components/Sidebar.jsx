@@ -83,6 +83,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
         <div
           className="w-[50px] h-[50px] rounded-[10px] flex items-center justify-center flex-shrink-0 cursor-pointer hidden lg:flex"
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <img src="/kodo.png" alt="Kodo logo" className="w-[60px] h-[60px] object-contain" />
         </div>

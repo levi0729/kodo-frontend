@@ -12,6 +12,7 @@ import TimeTrackingPage from '@/pages/TimeTracking';
 import FriendsPage from '@/pages/Friends';
 import ActivityLogPage from '@/pages/ActivityLog';
 import AuthPage from '@/pages/AuthPage';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import ServerStatusBanner from '@/components/ServerStatusBanner';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { MessagesProvider } from '@/context/MessagesContext';
@@ -96,18 +97,20 @@ function AppContent() {
         <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} />
 
         <div className="flex-1 overflow-y-auto px-3 py-3 md:px-8 md:py-6">
-          <Routes>
-            <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
-            <Route path="/teams" element={<TeamsPage onNavigate={handleNavigate} />} />
-            <Route path="/tasks" element={<TasksWrapper />} />
-            <Route path="/messages" element={<MessagesWrapper />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/time-tracking" element={<TimeTrackingPage />} />
-            <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
-            <Route path="/activity" element={<ActivityLogPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
+              <Route path="/teams" element={<TeamsPage onNavigate={handleNavigate} />} />
+              <Route path="/tasks" element={<TasksWrapper />} />
+              <Route path="/messages" element={<MessagesWrapper />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/time-tracking" element={<TimeTrackingPage />} />
+              <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
+              <Route path="/activity" element={<ActivityLogPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </ErrorBoundary>
         </div>
       </main>
     </div>

@@ -40,16 +40,19 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
   ];
 
   useEffect(() => {
+    if (!isOpen) return;
     function handleClickOutside(e) {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        onClose();
-      }
+      if (modalRef.current && !modalRef.current.contains(e.target)) onClose();
     }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+    function handleEscape(e) {
+      if (e.key === 'Escape') onClose();
     }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [isOpen, onClose]);
 
   const resetForm = () => {
@@ -120,7 +123,7 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
   const availableSuggestions = LABEL_SUGGESTIONS.filter(l => !formData.labels.includes(l));
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div
         ref={modalRef}
         className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto animate-fade-in-up mx-2 sm:mx-0"

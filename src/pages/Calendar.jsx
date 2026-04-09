@@ -136,12 +136,14 @@ function EventDetailPopup({ event, onClose, onEdit, onDelete, getUserById, curre
 
   useEffect(() => {
     const handler = (ev) => { if (ref.current && !ref.current.contains(ev.target)) onClose(); };
+    const escHandler = (ev) => { if (ev.key === 'Escape') onClose(); };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', escHandler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler); };
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div ref={ref} className="bg-[#1c1c26] border border-white/[0.1] rounded-xl w-full max-w-[380px] animate-fade-in-up shadow-2xl">
         <div className="h-1.5 rounded-t-xl" style={{ backgroundColor: event.color }} />
         <div className="p-5">
@@ -266,8 +268,10 @@ function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeP
   useEffect(() => {
     if (!isOpen) return;
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    const esc = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', esc); };
   }, [isOpen, onClose]);
 
   const submit = async (e) => {
@@ -275,6 +279,7 @@ function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeP
     const errs = {};
     if (!form.title.trim()) errs.title = cal.required;
     if (!form.date) errs.date = cal.required;
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) errs.endTime = cal.endBeforeStart;
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -310,7 +315,7 @@ function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div ref={ref} className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <h2 className="text-[18px] font-semibold text-white">{editEvent ? cal.editTitle : cal.title}</h2>
@@ -361,7 +366,8 @@ function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeP
             <div>
               <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.endTime}</label>
               <input type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 [color-scheme:dark]" />
+                className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 [color-scheme:dark] ${errors.endTime ? 'border-red-500/50' : 'border-white/[0.08]'}`} />
+              {errors.endTime && <p className="text-[11px] text-red-400 mt-1">{errors.endTime}</p>}
             </div>
           </div>
 
