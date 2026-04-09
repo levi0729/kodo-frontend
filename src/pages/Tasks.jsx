@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Clock, Plus, Check, Filter, X, Loader2 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Avatar from '@/components/Avatar';
 import ProgressBar from '@/components/ProgressBar';
 import { PriorityBadge } from '@/components/Badges';
@@ -10,7 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 export default function TasksPage({ highlightTaskId }) {
   const { activeProject } = useProject();
-  const { tasks, advanceTask, createTask, loading, hasMore, loadMoreTasks } = useTasks();
+  const { tasks, advanceTask, updateTask, createTask, loading, hasMore, loadMoreTasks } = useTasks();
   const { t, language } = useTheme();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
   const projectId = activeProject?.id || 1;
@@ -61,6 +62,20 @@ export default function TasksPage({ highlightTaskId }) {
   const handleCreateTask = (taskData) => {
     createTask(taskData);
   };
+
+  const onDragEnd = useCallback((result) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    const taskId = parseInt(draggableId, 10);
+    const newStatus = destination.droppableId;
+    if (source.droppableId !== newStatus) {
+      updateTask(taskId, {
+        status: newStatus,
+        progress: newStatus === 'done' ? 100 : undefined,
+      });
+    }
+  }, [updateTask]);
 
   const projectLoading = useProject().loading;
 
@@ -139,91 +154,115 @@ export default function TasksPage({ highlightTaskId }) {
         )}
       </div>
 
-      <div className="flex gap-3 md:gap-4 flex-1 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-x-visible lg:pb-0">
-        {COLUMNS.map(col => {
-          const colTasks = projectTasks.filter(t => t.status === col.key);
-          return (
-            <div key={col.key} className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/[0.04] p-2.5 md:p-3 min-w-[220px] lg:min-w-0">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
-                <span className="text-[11px] font-semibold text-kodo-text-secondary uppercase tracking-[0.06em]">
-                  {col.label}
-                </span>
-                <span className="ml-auto text-[10px] font-semibold text-kodo-text-dim bg-white/[0.04] px-1.5 py-0.5 rounded-full">
-                  {colTasks.length}
-                </span>
-              </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-3 md:gap-4 flex-1 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-x-visible lg:pb-0">
+          {COLUMNS.map(col => {
+            const colTasks = projectTasks.filter(t => t.status === col.key);
+            return (
+              <div key={col.key} className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/[0.04] p-2.5 md:p-3 min-w-[220px] lg:min-w-0">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
+                  <span className="text-[11px] font-semibold text-kodo-text-secondary uppercase tracking-[0.06em]">
+                    {col.label}
+                  </span>
+                  <span className="ml-auto text-[10px] font-semibold text-kodo-text-dim bg-white/[0.04] px-1.5 py-0.5 rounded-full">
+                    {colTasks.length}
+                  </span>
+                </div>
 
-              <div className="flex flex-col gap-2 flex-1">
-                {colTasks.map(task => {
-                  const taskLabels = task.labels || [];
-                  const creator = task.creator || null;
-                  const isHighlighted = task.id === highlightTaskId;
-                  const isDone = col.key === 'done';
-                  return (
+                <Droppable droppableId={col.key}>
+                  {(provided, snapshot) => (
                     <div
-                      key={task.id}
-                      ref={isHighlighted ? highlightRef : null}
-                      className={`kodo-card p-3.5 cursor-pointer relative ${isHighlighted ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent' : ''}`}
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`flex flex-col gap-2 flex-1 min-h-[60px] rounded-xl transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-indigo-500/[0.06]' : ''
+                      }`}
                     >
-                      {!isDone && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            advanceTask(task.id, task.status);
-                          }}
-                          className="absolute top-3 right-3 w-5 h-5 rounded-full border-2 border-white/20 bg-transparent hover:border-indigo-400 hover:bg-indigo-500/20 transition-all cursor-pointer flex items-center justify-center group"
-                          title={t.tasksPage.advance}
-                        >
-                          <Check size={10} className="text-transparent group-hover:text-indigo-400 transition-colors" />
-                        </button>
-                      )}
-                      {isDone && (
-                        <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
-                          <Check size={10} className="text-green-400" />
-                        </div>
-                      )}
+                      {colTasks.map((task, index) => {
+                        const taskLabels = task.labels || [];
+                        const creator = task.creator || null;
+                        const isHighlighted = task.id === highlightTaskId;
+                        const isDone = col.key === 'done';
+                        return (
+                          <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={(el) => {
+                                  provided.innerRef(el);
+                                  if (isHighlighted) highlightRef.current = el;
+                                }}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`kodo-card p-3.5 cursor-grab active:cursor-grabbing relative ${
+                                  isHighlighted ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent' : ''
+                                } ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/30 rotate-[2deg]' : ''}`}
+                                style={provided.draggableProps.style}
+                              >
+                                {!isDone && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      advanceTask(task.id, task.status);
+                                    }}
+                                    className="absolute top-3 right-3 w-5 h-5 rounded-full border-2 border-white/20 bg-transparent hover:border-indigo-400 hover:bg-indigo-500/20 transition-all cursor-pointer flex items-center justify-center group"
+                                    title={t.tasksPage.advance}
+                                  >
+                                    <Check size={10} className="text-transparent group-hover:text-indigo-400 transition-colors" />
+                                  </button>
+                                )}
+                                {isDone && (
+                                  <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
+                                    <Check size={10} className="text-green-400" />
+                                  </div>
+                                )}
 
-                      <div className="text-[13px] font-medium text-kodo-text mb-2 pr-7">{task.title}</div>
+                                <div className="text-[13px] font-medium text-kodo-text mb-2 pr-7">{task.title}</div>
 
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {taskLabels.map(l => (
-                          <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-kodo-text-dim font-medium">
-                            {l}
-                          </span>
-                        ))}
-                      </div>
+                                <div className="flex flex-wrap gap-1 mb-3">
+                                  {taskLabels.map(l => (
+                                    <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-kodo-text-dim font-medium">
+                                      {l}
+                                    </span>
+                                  ))}
+                                </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <PriorityBadge priority={task.priority} />
-                          {task.due_date && (
-                            <span className="text-[11px] text-kodo-text-dim flex items-center gap-1">
-                              <Clock size={11} />
-                              {new Date(task.due_date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex">
-                          {creator && (
-                            <Avatar user={creator} size={22} />
-                          )}
-                        </div>
-                      </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <PriorityBadge priority={task.priority} />
+                                    {task.due_date && (
+                                      <span className="text-[11px] text-kodo-text-dim flex items-center gap-1">
+                                        <Clock size={11} />
+                                        {new Date(task.due_date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex">
+                                    {creator && (
+                                      <Avatar user={creator} size={22} />
+                                    )}
+                                  </div>
+                                </div>
 
-                      {task.progress > 0 && task.progress < 100 && (
-                        <div className="mt-2.5">
-                          <ProgressBar value={task.progress} color={col.color} height={4} />
-                        </div>
-                      )}
+                                {task.progress > 0 && task.progress < 100 && (
+                                  <div className="mt-2.5">
+                                    <ProgressBar value={task.progress} color={col.color} height={4} />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })}
+                      {provided.placeholder}
                     </div>
-                  );
-                })}
+                  )}
+                </Droppable>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
 
       {hasMore && (
         <div className="flex justify-center mt-4">

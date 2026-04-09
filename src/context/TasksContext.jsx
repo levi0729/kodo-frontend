@@ -108,16 +108,17 @@ export function TasksProvider({ children }) {
   }, [activeProjectId, toast]);
 
   const updateTask = useCallback(async (taskId, updates) => {
+    // Optimistic update for instant DnD feedback
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
     try {
       const data = await tasksApi.update(taskId, updates);
       setTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
-      toast.success('Task updated');
       return data.task;
     } catch (err) {
       toast.error('Failed to update task: ' + err.message);
-      throw err;
+      fetchTasks(); // Revert on error
     }
-  }, [toast]);
+  }, [toast, fetchTasks]);
 
   const deleteTask = useCallback(async (taskId) => {
     try {
