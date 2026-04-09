@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Hash, Send, Pin, SmilePlus, Paperclip, AtSign, User, Search, Users, X, FileText, ChevronLeft, Loader2, UserPlus, Check, Clock } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { users as usersApi, teams as teamsApi, friends as friendsApi } from '@/services/api';
@@ -48,6 +48,15 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const emojiPickerRef = useRef(null);
+
+  // Cleanup object URLs on unmount to prevent memory leaks
+  const attachmentsRef = useRef(attachments);
+  attachmentsRef.current = attachments;
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview); });
+    };
+  }, []);
 
   // Fetch users, teams, and friends from API
   useEffect(() => {
