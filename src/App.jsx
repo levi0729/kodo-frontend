@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
+import SearchModal from '@/components/SearchModal';
 import Dashboard from '@/pages/Dashboard';
 import TeamsPage from '@/pages/Teams';
 import TasksPage from '@/pages/Tasks';
@@ -20,6 +21,7 @@ import { TasksProvider } from '@/context/TasksContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastProvider } from '@/components/Toast';
+import { participants as participantsApi } from '@/services/api';
 
 const PAGE_ROUTES = {
   dashboard: '/',
@@ -80,9 +82,30 @@ function TasksWrapper() {
 
 function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
   const { isLoggedIn } = useAuth();
   const handleNavigate = useAppNavigate();
   const activePage = useActivePage();
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    function handleKey(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    participantsApi.list('project', 1)
+      .then(data => setTeamMembers((data.participants || data.data || []).map(p => p.user || p)))
+      .catch(() => {});
+  }, [isLoggedIn]);
 
   if (!isLoggedIn) {
     return <AuthPage />;
@@ -93,8 +116,15 @@ function AppContent() {
       <ServerStatusBanner />
       <Sidebar activePage={activePage} onNavigate={handleNavigate} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={handleNavigate}
+        teamMembers={teamMembers}
+      />
+
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} />
+        <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} onSearchOpen={() => setSearchOpen(true)} />
 
         <div className="flex-1 overflow-y-auto px-3 py-3 md:px-8 md:py-6">
           <ErrorBoundary>

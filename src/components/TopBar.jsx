@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, AtSign, X, Menu, Loader2 } from 'lucide-react';
+import { Bell, CheckCheck, AtSign, X, Menu, Loader2, Search } from 'lucide-react';
 import Avatar from './Avatar';
 import { useProject } from '@/context/ProjectContext';
 import { useMessages } from '@/context/MessagesContext';
 import { notifications as notificationsApi, users as usersApi } from '@/services/api';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function TopBar({ activePage, onMenuToggle }) {
+export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const { activeProject } = useProject();
@@ -96,6 +96,23 @@ export default function TopBar({ activePage, onMenuToggle }) {
       </div>
 
       <div className="flex items-center gap-1 relative" ref={dropdownRef}>
+        <button
+          onClick={onSearchOpen}
+          aria-label={t.common.search}
+          className="p-2 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors hidden sm:flex items-center gap-2"
+        >
+          <Search size={18} />
+          <kbd className="text-[10px] text-kodo-text-dim bg-white/[0.06] px-1.5 py-0.5 rounded border border-white/[0.08] font-mono">
+            ⌘K
+          </kbd>
+        </button>
+        <button
+          onClick={onSearchOpen}
+          aria-label={t.common.search}
+          className="p-2 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors sm:hidden"
+        >
+          <Search size={18} />
+        </button>
         <button
           onClick={() => setNotifOpen(!notifOpen)}
           aria-label={t.topbar.notifications}
