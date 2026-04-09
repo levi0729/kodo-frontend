@@ -255,6 +255,13 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
                 </div>
               </div>
               <button
+                onClick={() => { setShowUserPopup(false); onNavigate('profile'); }}
+                className="w-full flex items-center justify-center gap-2 py-2 mb-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-[12px] font-medium cursor-pointer border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+              >
+                <Settings size={14} />
+                {t.sidebar.viewProfile || (t.language === 'hu' ? 'Profil megtekintése' : 'View Profile')}
+              </button>
+              <button
                 onClick={() => { setShowUserPopup(false); logout(); }}
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border border-red-500/20 hover:bg-red-500/20 transition-colors"
               >

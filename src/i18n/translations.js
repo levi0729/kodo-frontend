@@ -41,6 +41,7 @@ const translations = {
         'time-tracking': 'Időkövetés',
         friends: 'Barátok',
         activity: 'Napló',
+        profile: 'Profil',
       },
     },
     dashboard: {
@@ -383,6 +384,7 @@ const translations = {
         'time-tracking': 'Time Tracking',
         friends: 'Friends',
         activity: 'Activity',
+        profile: 'Profile',
       },
     },
     dashboard: {

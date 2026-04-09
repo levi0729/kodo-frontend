@@ -12,6 +12,7 @@ import SettingsPage from '@/pages/Settings';
 import TimeTrackingPage from '@/pages/TimeTracking';
 import FriendsPage from '@/pages/Friends';
 import ActivityLogPage from '@/pages/ActivityLog';
+import ProfilePage from '@/pages/Profile';
 import AuthPage from '@/pages/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServerStatusBanner from '@/components/ServerStatusBanner';
@@ -33,6 +34,7 @@ const PAGE_ROUTES = {
   'time-tracking': '/time-tracking',
   friends: '/friends',
   activity: '/activity',
+  profile: '/profile',
 };
 
 const ROUTE_TO_PAGE = Object.fromEntries(
@@ -138,6 +140,7 @@ function AppContent() {
               <Route path="/time-tracking" element={<TimeTrackingPage />} />
               <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
               <Route path="/activity" element={<ActivityLogPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </ErrorBoundary>
