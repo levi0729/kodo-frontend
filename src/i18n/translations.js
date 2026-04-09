@@ -298,6 +298,8 @@ const translations = {
       totalThisWeek: 'Összes idő ezen a héten',
       today: 'Ma',
       entryDeleted: 'Bejegyzés törölve!',
+      exportCSV: 'CSV exportálás',
+      exported: 'CSV exportálva!',
     },
     auth: {
       welcomeTitle: 'Üdvözlünk!',
@@ -583,6 +585,8 @@ const translations = {
       totalThisWeek: 'Total time this week',
       today: 'Today',
       entryDeleted: 'Entry deleted!',
+      exportCSV: 'Export CSV',
+      exported: 'CSV exported!',
     },
     auth: {
       welcomeTitle: 'Welcome!',

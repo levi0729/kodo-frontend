@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Square, Trash2, Loader2, Clock, BarChart3 } from 'lucide-react';
+import { Play, Square, Trash2, Loader2, Clock, BarChart3, Download } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
 import { timeEntries as timeEntriesApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
@@ -145,6 +145,23 @@ export default function TimeTracking() {
   const summary = weeklySummary();
   const todayIndex = (new Date().getDay() + 6) % 7;
 
+  const exportCSV = () => {
+    if (entries.length === 0) return;
+    const header = 'Description,Duration (min),Date,Project\n';
+    const rows = entries.map(e =>
+      `"${(e.description || '').replace(/"/g, '""')}",${e.duration_minutes || 0},"${formatDate(e.started_at || e.created_at)}","${(e.project_name || '').replace(/"/g, '""')}"`
+    ).join('\n');
+    const csv = header + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `time-entries-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(t.timeTracking.exported || 'CSV exported');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -168,6 +185,15 @@ export default function TimeTracking() {
             )}
           </p>
         </div>
+        {entries.length > 0 && (
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-secondary text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors flex-shrink-0"
+          >
+            <Download size={14} />
+            {t.timeTracking.exportCSV || 'Export CSV'}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
