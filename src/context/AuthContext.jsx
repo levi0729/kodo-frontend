@@ -22,6 +22,8 @@ export function AuthProvider({ children }) {
   // Restore session on mount
   useEffect(() => {
     const token = localStorage.getItem('kodo_token');
+    // Safety timeout — never hang on the loading screen longer than 12s
+    const safetyTimer = setTimeout(() => setInitializing(false), 12000);
     if (token && !currentUser) {
       authApi.me()
         .then(data => {
@@ -33,10 +35,12 @@ export function AuthProvider({ children }) {
           localStorage.removeItem('kodo_user');
           setCurrentUser(null);
         })
-        .finally(() => setInitializing(false));
+        .finally(() => { clearTimeout(safetyTimer); setInitializing(false); });
     } else {
+      clearTimeout(safetyTimer);
       setInitializing(false);
     }
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   // Handle session expiry from API interceptor

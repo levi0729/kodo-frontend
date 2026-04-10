@@ -35,7 +35,21 @@ async function request(endpoint, options = {}) {
     config.body = JSON.stringify(body);
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, config);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  config.signal = controller.signal;
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, config);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Check your connection.');
+    }
+    throw new Error('Cannot reach server. Check your connection.');
+  }
+  clearTimeout(timeoutId);
 
   if (res.status === 401) {
     setToken(null);
@@ -109,6 +123,20 @@ export const auth = {
     return request('/auth/change-password', {
       method: 'POST',
       body: { current_password: currentPassword, password: newPassword, password_confirmation: newPasswordConfirmation },
+    });
+  },
+
+  async forgotPassword(email) {
+    return request('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
+  async resetPassword({ email, token, password, password_confirmation }) {
+    return request('/auth/reset-password', {
+      method: 'POST',
+      body: { email, token, password, password_confirmation },
     });
   },
 };
