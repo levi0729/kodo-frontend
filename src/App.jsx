@@ -1,21 +1,24 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import SearchModal from '@/components/SearchModal';
-import Dashboard from '@/pages/Dashboard';
-import TeamsPage from '@/pages/Teams';
-import TasksPage from '@/pages/Tasks';
-import MessagesPage from '@/pages/Messages';
-import CalendarPage from '@/pages/Calendar';
-import SettingsPage from '@/pages/Settings';
-import TimeTrackingPage from '@/pages/TimeTracking';
-import FriendsPage from '@/pages/Friends';
-import ActivityLogPage from '@/pages/ActivityLog';
-import ProfilePage from '@/pages/Profile';
 import AuthPage from '@/pages/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServerStatusBanner from '@/components/ServerStatusBanner';
+
+// Lazy-loaded pages for code-splitting
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const TeamsPage = lazy(() => import('@/pages/Teams'));
+const TasksPage = lazy(() => import('@/pages/Tasks'));
+const MessagesPage = lazy(() => import('@/pages/Messages'));
+const CalendarPage = lazy(() => import('@/pages/Calendar'));
+const SettingsPage = lazy(() => import('@/pages/Settings'));
+const TimeTrackingPage = lazy(() => import('@/pages/TimeTracking'));
+const FriendsPage = lazy(() => import('@/pages/Friends'));
+const ActivityLogPage = lazy(() => import('@/pages/ActivityLog'));
+const ProfilePage = lazy(() => import('@/pages/Profile'));
 import { ProjectProvider } from '@/context/ProjectContext';
 import { MessagesProvider } from '@/context/MessagesContext';
 import { TasksProvider } from '@/context/TasksContext';
@@ -130,19 +133,21 @@ function AppContent() {
 
         <div className="flex-1 overflow-y-auto px-3 py-3 md:px-8 md:py-6">
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
-              <Route path="/teams" element={<TeamsPage onNavigate={handleNavigate} />} />
-              <Route path="/tasks" element={<TasksWrapper />} />
-              <Route path="/messages" element={<MessagesWrapper />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/time-tracking" element={<TimeTrackingPage />} />
-              <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
-              <Route path="/activity" element={<ActivityLogPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /></div>}>
+              <Routes>
+                <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
+                <Route path="/teams" element={<TeamsPage onNavigate={handleNavigate} />} />
+                <Route path="/tasks" element={<TasksWrapper />} />
+                <Route path="/messages" element={<MessagesWrapper />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/time-tracking" element={<TimeTrackingPage />} />
+                <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
+                <Route path="/activity" element={<ActivityLogPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </div>
       </main>
