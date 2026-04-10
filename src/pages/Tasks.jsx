@@ -7,6 +7,7 @@ import { PriorityBadge } from '@/components/Badges';
 import { useProject } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TasksContext';
 import NewTaskModal from '@/components/NewTaskModal';
+import TaskDetailModal from '@/components/TaskDetailModal';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function TasksPage({ highlightTaskId }) {
@@ -18,6 +19,7 @@ export default function TasksPage({ highlightTaskId }) {
   const highlightRef = useRef(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [filterPriority, setFilterPriority] = useState(null);
   const [filterLabel, setFilterLabel] = useState(null);
 
@@ -194,6 +196,7 @@ export default function TasksPage({ highlightTaskId }) {
                                 }}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
+                                onClick={() => { if (!snapshot.isDragging) setSelectedTask(task); }}
                                 className={`kodo-card p-3.5 cursor-grab active:cursor-grabbing relative ${
                                   isHighlighted ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent' : ''
                                 } ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/30 rotate-[2deg]' : ''}`}
@@ -280,6 +283,12 @@ export default function TasksPage({ highlightTaskId }) {
         onClose={() => setIsModalOpen(false)}
         onTaskCreate={handleCreateTask}
         projectId={projectId}
+      />
+
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
       />
     </div>
   );

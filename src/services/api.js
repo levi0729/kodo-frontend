@@ -240,6 +240,38 @@ export const tasks = {
   },
 };
 
+// ── Checklists ────────────────────────────────────────────
+
+export const checklists = {
+  async list(taskId) {
+    return request(`/tasks/${taskId}/checklists`);
+  },
+
+  async create(taskId, data) {
+    return request(`/tasks/${taskId}/checklists`, { method: 'POST', body: data });
+  },
+
+  async update(taskId, checklistId, data) {
+    return request(`/tasks/${taskId}/checklists/${checklistId}`, { method: 'PUT', body: data });
+  },
+
+  async destroy(taskId, checklistId) {
+    return request(`/tasks/${taskId}/checklists/${checklistId}`, { method: 'DELETE' });
+  },
+
+  async addItem(taskId, checklistId, data) {
+    return request(`/tasks/${taskId}/checklists/${checklistId}/items`, { method: 'POST', body: data });
+  },
+
+  async updateItem(taskId, checklistId, itemId, data) {
+    return request(`/tasks/${taskId}/checklists/${checklistId}/items/${itemId}`, { method: 'PUT', body: data });
+  },
+
+  async destroyItem(taskId, checklistId, itemId) {
+    return request(`/tasks/${taskId}/checklists/${checklistId}/items/${itemId}`, { method: 'DELETE' });
+  },
+};
+
 // ── Teams ─────────────────────────────────────────────────
 
 export const teams = {
