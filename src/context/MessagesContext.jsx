@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { chat as chatApi, files as filesApi, channels as channelsApi } from '@/services/api';
+import { chat as chatApi, files as filesApi, channels as channelsApi, conversations as conversationsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
@@ -20,6 +20,8 @@ export function MessagesProvider({ children }) {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [conversationsLoading, setConversationsLoading] = useState(false);
   const [activeChannelId, setActiveChannelId] = useState(null);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+  const [groupConversations, setGroupConversations] = useState([]);
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
@@ -43,9 +45,17 @@ export function MessagesProvider({ children }) {
     }
   }, [isLoggedIn]);
 
+  const fetchGroupConversations = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const data = await conversationsApi.list();
+      setGroupConversations(data.conversations || []);
+    } catch { /* silent */ }
+  }, [isLoggedIn]);
+
   useEffect(() => {
-    if (isLoggedIn) fetchConversations();
-    else setConversations([]);
+    if (isLoggedIn) { fetchConversations(); fetchGroupConversations(); }
+    else { setConversations([]); setGroupConversations([]); }
   }, [isLoggedIn]);
 
   // ── Messages for active room ────────────────────────────
@@ -69,6 +79,7 @@ export function MessagesProvider({ children }) {
     setMessages([]);
     lastMessageIdRef.current = 0;
     setActiveRoomId(roomId);
+    setActiveConversationId(null);
     fetchMessages(roomId);
   }, [fetchMessages]);
 
@@ -125,6 +136,58 @@ export function MessagesProvider({ children }) {
       throw err;
     }
   }, [toast, t]);
+
+  // ── Group conversations ────────────────────────────────
+
+  const openConversation = useCallback(async (conversationId) => {
+    setActiveConversationId(conversationId);
+    setActiveChannelId(null);
+    setActiveRoomId(null);
+    setMessages([]);
+    setMessagesLoading(true);
+    if (pollRef.current) clearInterval(pollRef.current);
+    try {
+      const data = await conversationsApi.messages(conversationId, { per_page: 50 });
+      const msgs = data.messages?.data || data.messages || [];
+      setMessages(Array.isArray(msgs) ? [...msgs].reverse() : []);
+    } catch (err) {
+      toast.error(t.chatErrors.loadFailed);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [toast, t]);
+
+  const sendConversationMessage = useCallback(async (conversationId, content) => {
+    try {
+      const data = await conversationsApi.sendMessage(conversationId, content);
+      const msg = data.message;
+      if (msg) {
+        const normalized = {
+          ...msg,
+          message: msg.content,
+          content: msg.content,
+          reactions: msg.reactions || [],
+          attachments: msg.attachments || [],
+        };
+        setMessages(prev => [...prev, normalized]);
+      }
+      return msg;
+    } catch (err) {
+      toast.error(t.chatErrors.sendFailed + ': ' + err.message);
+      throw err;
+    }
+  }, [toast, t]);
+
+  const createGroupConversation = useCallback(async (name, userIds) => {
+    try {
+      const data = await conversationsApi.create({ name, user_ids: userIds });
+      await fetchGroupConversations();
+      return data.conversation;
+    } catch (err) {
+      toast.error(err.message || 'Failed to create group');
+      throw err;
+    }
+  }, [toast, fetchGroupConversations]);
 
   // ── Polling for new messages (pauses when tab is hidden) ─
 
@@ -277,6 +340,11 @@ export function MessagesProvider({ children }) {
       sendMessage,
       sendTeamMessage,
       sendChannelMessage,
+      activeConversationId,
+      groupConversations,
+      openConversation,
+      sendConversationMessage,
+      createGroupConversation,
       markAsRead,
       toggleReaction,
       notifications,

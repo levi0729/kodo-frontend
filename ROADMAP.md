@@ -165,7 +165,7 @@ The database schema defines these tables, but there are no API endpoints or UI f
 
 36. [x] **File attachments (`message_attachments`)** — full schema for file metadata (size, type, dimensions) but no upload/download API.
 
-37. [ ] **Group conversations (`conversations` + `conversation_participants`)** — designed for multi-person chats separate from team rooms.
+37. [x] **Group conversations (`conversations` + `conversation_participants`)** — Full UI: Groups section in ChannelSidebar with create (+) button, CreateGroupModal for naming and selecting members, conversation messages in MessageThread/ComposeBox, integrated into MessagesContext with openConversation/sendConversationMessage/createGroupConversation. Backend: ConversationController handles CRUD + messaging via `/api/conversations`.
 
 38. [ ] **Organizations (`organizations`)** — workspace management with plan types (free, standard, business, pro, enterprise).
 

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Hash, ChevronLeft, Loader2, Lock, Megaphone } from 'lucide-react';
+import { Hash, ChevronLeft, Loader2, Lock, Megaphone, Users } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import ChannelSidebar from '@/components/messages/ChannelSidebar';
 import MessageThread from '@/components/messages/MessageThread';
 import ComposeBox from '@/components/messages/ComposeBox';
 import FindFriendsModal from '@/components/messages/FindFriendsModal';
+import CreateGroupModal from '@/components/messages/CreateGroupModal';
 import { useAuth } from '@/context/AuthContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -17,6 +18,8 @@ export default function MessagesPage({ dmUserId, teamId }) {
     messages, messagesLoading,
     openDM, openTeamRoom, openChannel, activeChannelId,
     sendMessage, sendTeamMessage, sendChannelMessage,
+    activeConversationId, groupConversations,
+    openConversation, sendConversationMessage, createGroupConversation,
     toggleReaction: toggleReactionApi, addNotification
   } = useMessages();
   const { t } = useTheme();
@@ -33,6 +36,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const [dmSearch, setDmSearch] = useState('');
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [showFindFriends, setShowFindFriends] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [teamChannels, setTeamChannels] = useState([]);
 
   // Fetch channels when active team changes
@@ -71,6 +75,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
   const activeTeam = userTeams.find(tm => tm.id === activeTeamId);
   const activeChannel = teamChannels.find(ch => ch.id === activeChannelId);
+  const activeConversation = groupConversations.find(g => g.id === activeConversationId);
 
   // DM list shows only accepted friends
   const friendMembers = friendsList.filter(u => u.id !== currentUser?.id);
@@ -107,10 +112,19 @@ export default function MessagesPage({ dmUserId, teamId }) {
     openDM(userId);
   }, [openDM]);
 
+  const handleSelectConversation = useCallback((conversationId) => {
+    setActiveDmUserId(null);
+    setActiveTeamId(null);
+    setMobileShowChat(true);
+    openConversation(conversationId);
+  }, [openConversation]);
+
   const handleSend = useCallback(async (msgText, fileList) => {
     try {
       if (activeDmUserId) {
         await sendMessage(activeDmUserId, msgText, fileList);
+      } else if (activeConversationId) {
+        await sendConversationMessage(activeConversationId, msgText);
       } else if (activeChannelId) {
         await sendChannelMessage(activeChannelId, msgText);
       } else if (activeTeamId) {
@@ -132,7 +146,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
         body: msgText.length > 60 ? msgText.slice(0, 60) + '...' : msgText,
       });
     }
-  }, [activeDmUserId, activeChannelId, activeTeamId, sendMessage, sendChannelMessage, sendTeamMessage, allUsers, currentUser, addNotification, t]);
+  }, [activeDmUserId, activeConversationId, activeChannelId, activeTeamId, sendMessage, sendConversationMessage, sendChannelMessage, sendTeamMessage, allUsers, currentUser, addNotification, t]);
 
   // Determine header info
   const renderChannelIcon = (type, size = 17) => {
@@ -141,7 +155,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
     return <Hash size={size} className="text-kodo-text-muted" />;
   };
 
-  const canSend = !!(activeDmUserId || activeTeamId || activeChannelId);
+  const canSend = !!(activeDmUserId || activeTeamId || activeChannelId || activeConversationId);
 
   if (dataLoading) {
     return (
@@ -168,6 +182,10 @@ export default function MessagesPage({ dmUserId, teamId }) {
         teamChannels={teamChannels}
         activeChannelId={activeChannelId}
         onSelectChannel={handleSelectChannel}
+        groupConversations={groupConversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={handleSelectConversation}
+        onNewGroup={() => setShowCreateGroup(true)}
       />
       <div className={`${!mobileShowChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0`}>
         <div className="h-[52px] flex items-center gap-2.5 px-3 md:px-6 border-b border-white/[0.06] flex-shrink-0">
@@ -184,6 +202,11 @@ export default function MessagesPage({ dmUserId, teamId }) {
               <span className="text-[12px] text-kodo-text-dim ml-1 hidden sm:inline truncate">
                 · {dmUser.job_title}
               </span>
+            </>
+          ) : activeConversation ? (
+            <>
+              <Users size={17} className="text-kodo-text-muted" />
+              <span className="text-[14px] sm:text-[15px] font-semibold text-white truncate">{activeConversation.name}</span>
             </>
           ) : activeChannel ? (
             <>
@@ -221,6 +244,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
             dmUser={dmUser}
             activeTeam={activeTeam}
             activeChannel={activeChannel}
+            activeConversation={activeConversation}
             getUserById={getUserById}
             toggleReaction={toggleReaction}
           />
@@ -230,6 +254,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
           dmUser={dmUser}
           activeTeam={activeTeam}
           activeChannel={activeChannel}
+          activeConversation={activeConversation}
           allUsers={allUsers}
           currentUser={currentUser}
           onSend={handleSend}
@@ -243,6 +268,14 @@ export default function MessagesPage({ dmUserId, teamId }) {
           setPendingRequests={setPendingRequests}
           setFriendsList={setFriendsList}
           onClose={() => setShowFindFriends(false)}
+        />
+      )}
+      {showCreateGroup && (
+        <CreateGroupModal
+          allUsers={allUsers}
+          currentUser={currentUser}
+          onClose={() => setShowCreateGroup(false)}
+          onCreate={createGroupConversation}
         />
       )}
     </div>

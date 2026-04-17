@@ -3,7 +3,7 @@ import { Send, Paperclip, AtSign, X, FileText } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, allUsers, currentUser, onSend }) {
+export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, activeConversation, allUsers, currentUser, onSend }) {
   const { t } = useTheme();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -105,7 +105,7 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
     return bytes + ' B';
   };
 
-  const canSend = !!(activeDmUserId || activeTeam || activeChannel);
+  const canSend = !!(activeDmUserId || activeTeam || activeChannel || activeConversation);
 
   return (
     <div className="px-3 md:px-6 py-3 border-t border-white/[0.06] flex-shrink-0">
@@ -194,7 +194,9 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
               placeholder={
                 activeDmUserId && dmUser
                   ? t.messagesPage.messageTo.replace('{name}', dmUser.display_name)
-                  : t.messagesPage.messageToChannel.replace('{name}', activeChannel?.name || activeTeam?.name || 'general')
+                  : activeConversation
+                    ? (t.messagesPage.messageToGroup || t.messagesPage.messageToChannel).replace('{name}', activeConversation.name)
+                    : t.messagesPage.messageToChannel.replace('{name}', activeChannel?.name || activeTeam?.name || 'general')
               }
               className="flex-1 bg-transparent border-none outline-none text-[13px] sm:text-[14px] text-kodo-text placeholder:text-kodo-text-dim min-w-0"
             />

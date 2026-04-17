@@ -1,4 +1,4 @@
-import { Search, UserPlus, Hash, Lock, Megaphone } from 'lucide-react';
+import { Search, UserPlus, Hash, Lock, Megaphone, Users, Plus } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -14,6 +14,7 @@ export default function ChannelSidebar({
   pendingRequests, onSelectTeam, onSelectDm, onFindFriends,
   mobileShowChat,
   teamChannels, activeChannelId, onSelectChannel,
+  groupConversations, activeConversationId, onSelectConversation, onNewGroup,
 }) {
   const { t } = useTheme();
 
@@ -63,8 +64,39 @@ export default function ChannelSidebar({
           ))}
         </div>
       </div>
+      <div className="p-4 pt-0">
+        <div className="flex items-center justify-between mb-1">
+          <div className="kodo-section-title m-0">{t.messagesPage.groups}</div>
+          <button
+            onClick={onNewGroup}
+            className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none"
+            title={t.messagesPage.newGroup}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          {groupConversations.map(g => (
+            <button
+              key={g.id}
+              onClick={() => onSelectConversation(g.id)}
+              className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all border-none text-left ${
+                activeConversationId === g.id
+                  ? 'bg-kodo-accent/10 text-indigo-400'
+                  : 'bg-transparent text-kodo-text-muted hover:bg-white/[0.04] hover:text-kodo-text-secondary'
+              }`}
+            >
+              <Users size={14} className="text-kodo-text-dim flex-shrink-0" />
+              <span className="truncate">{g.name}</span>
+            </button>
+          ))}
+          {groupConversations.length === 0 && (
+            <div className="text-[12px] text-kodo-text-dim px-2.5 py-1">{t.messagesPage.noGroups}</div>
+          )}
+        </div>
+      </div>
       <div className="p-4 pt-0 flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mt-4 mb-1">
+        <div className="flex items-center justify-between mb-1">
           <div className="kodo-section-title m-0">{t.messagesPage.directMessages}</div>
           <div className="flex items-center gap-1">
             {pendingRequests.length > 0 && (
