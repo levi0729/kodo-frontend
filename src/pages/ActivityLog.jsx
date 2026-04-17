@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { List as VirtualList } from 'react-window';
 import { Loader2, Plus, RefreshCw, Pencil, Trash2, FileText, Users, FolderKanban, CalendarDays, Clock } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
@@ -132,6 +133,84 @@ export default function ActivityLog() {
     return t.activityLog[action] || action;
   };
 
+  const ITEM_HEIGHT = 72;
+  const containerRef = useRef(null);
+  const [listHeight, setListHeight] = useState(400);
+
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) {
+        const top = containerRef.current.getBoundingClientRect().top;
+        setListHeight(Math.max(200, window.innerHeight - top - 24));
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [loading]);
+
+  const itemCount = entries.length + (hasMore ? 1 : 0);
+
+  const ActivityRow = useCallback(({ index, style }) => {
+    if (index === entries.length) {
+      return (
+        <div style={style} className="flex justify-center items-center">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="kodo-btn-primary flex items-center gap-2 disabled:opacity-50"
+          >
+            {loadingMore ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            {t.activityLog.loadMore}
+          </button>
+        </div>
+      );
+    }
+
+    const entry = entries[index];
+    const user = entry.user || entry.causer || null;
+    const userName = user?.display_name || user?.name || 'Unknown';
+    const action = entry.action || 'updated';
+    const entityType = entry.entity_type || entry.subject_type || '';
+    const entityName = entry.entity_name || entry.description || entry.subject?.name || entityType;
+
+    return (
+      <div style={style} className="pr-1">
+        <div className="flex items-start gap-3 sm:gap-4 group h-full pb-2">
+          <div className="relative flex-shrink-0 z-10">
+            {user ? (
+              <Avatar user={user} size={38} />
+            ) : (
+              <div className="w-[38px] h-[38px] rounded-full bg-white/[0.06] flex items-center justify-center">
+                {actionIcon(action)}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 kodo-card p-3 md:p-4 group-hover:bg-white/[0.06] transition-colors">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] md:text-[14px] text-white leading-relaxed m-0">
+                  <span className="font-semibold">{userName}</span>{' '}
+                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border ${actionColor(action)}`}>
+                    {actionIcon(action)}
+                    {getActionLabel(action)}
+                  </span>{' '}
+                  <span className="inline-flex items-center gap-1 text-kodo-text-muted">
+                    {entityIcon(entityType)}
+                    <span className="font-medium text-white/80">{entityName}</span>
+                  </span>
+                </p>
+              </div>
+              <span className="text-[11px] text-kodo-text-dim whitespace-nowrap flex-shrink-0 mt-0.5">
+                {relativeTime(entry.created_at, t)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }, [entries, hasMore, loadingMore, handleLoadMore, t]);
+
   const tabs = [
     { key: 'my', label: t.activityLog.tabs.my },
     { key: 'project', label: t.activityLog.tabs.project },
@@ -188,77 +267,19 @@ export default function ActivityLog() {
           <p className="text-kodo-text-muted text-[14px]">{t.activityLog.noActivity}</p>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" ref={containerRef}>
           {/* Timeline line */}
           <div className="absolute left-[19px] top-2 bottom-2 w-px bg-white/[0.06] hidden sm:block" />
 
-          <div className="flex flex-col gap-2">
-            {entries.map((entry, idx) => {
-              const user = entry.user || entry.causer || null;
-              const userName = user?.display_name || user?.name || 'Unknown';
-              const action = entry.action || 'updated';
-              const entityType = entry.entity_type || entry.subject_type || '';
-              const entityName = entry.entity_name || entry.description || entry.subject?.name || entityType;
-
-              return (
-                <div
-                  key={entry.id || idx}
-                  className="flex items-start gap-3 sm:gap-4 group"
-                >
-                  {/* Avatar / icon circle */}
-                  <div className="relative flex-shrink-0 z-10">
-                    {user ? (
-                      <Avatar user={user} size={38} />
-                    ) : (
-                      <div className="w-[38px] h-[38px] rounded-full bg-white/[0.06] flex items-center justify-center">
-                        {actionIcon(action)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 kodo-card p-3 md:p-4 group-hover:bg-white/[0.06] transition-colors">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] md:text-[14px] text-white leading-relaxed m-0">
-                          <span className="font-semibold">{userName}</span>{' '}
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border ${actionColor(action)}`}>
-                            {actionIcon(action)}
-                            {getActionLabel(action)}
-                          </span>{' '}
-                          <span className="inline-flex items-center gap-1 text-kodo-text-muted">
-                            {entityIcon(entityType)}
-                            <span className="font-medium text-white/80">{entityName}</span>
-                          </span>
-                        </p>
-                      </div>
-                      <span className="text-[11px] text-kodo-text-dim whitespace-nowrap flex-shrink-0 mt-0.5">
-                        {relativeTime(entry.created_at, t)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Load more */}
-          {hasMore && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="kodo-btn-primary flex items-center gap-2 disabled:opacity-50"
-              >
-                {loadingMore ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={15} />
-                )}
-                {t.activityLog.loadMore}
-              </button>
-            </div>
-          )}
+          <VirtualList
+            height={listHeight}
+            itemCount={itemCount}
+            itemSize={ITEM_HEIGHT}
+            width="100%"
+            overscanCount={5}
+          >
+            {ActivityRow}
+          </VirtualList>
         </div>
       )}
     </div>

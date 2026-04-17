@@ -250,7 +250,8 @@ If you have time, these would really stand out:
     - **Done:** Covered in ProjectTest (owner-only update/delete/restore, member-only show, 403 for non-members) and TaskTest (creator/assignee/member access, 403 for strangers, bulk-update skips inaccessible tasks).
 70. [x] Add API documentation (Swagger or update the README)
     - **Done:** Comprehensive `API.md` with all 70+ endpoints documented: auth, verification, projects, tasks, teams, chat, calendar, time entries, friends, participants, notifications, users, settings, files, conversations, channels, organizations. Includes request/response examples, validation rules, and error formats.
-71. [ ] Write frontend tests with Vitest
+71. [x] Write frontend tests with Vitest
+    - **Done:** 30 tests across 3 suites — ProgressBar (7 tests: value clamping, height, className), Avatar + AvatarStack (12 tests: initials, images, status, overflow), API service (11 tests: token management, healthCheck, error handling, auth requests). Using Vitest + @testing-library/react + jsdom.
 72. [x] Create proper `.env.example` files
 73. [x] Remove or integrate the Node.js server (`kodo/server/`)
 74. [x] Clean up unused npm dependencies — audited, all 6 runtime deps (`@hello-pangea/dnd`, `clsx`, `lucide-react`, `react`, `react-dom`, `react-router-dom`) are actively used.
@@ -315,8 +316,8 @@ These are frontend issues found during a code audit. They aren't visible bugs li
 
 93. [x] **Messages.jsx:225-235** — friend search hits `usersApi.list()` on every keystroke. Needs a 300ms debounce or client-side filter.
 
-94. [ ] **No virtualization anywhere** — long task lists, message lists, and activity feeds render every item to the DOM.
-    - **Fix:** Use `react-window` for lists expected to grow.
+94. [x] **No virtualization anywhere** — long task lists, message lists, and activity feeds render every item to the DOM.
+    - **Done:** Virtualized ActivityLog feed using `react-window` `List` component with fixed 72px row height, dynamic container height, overscan of 5 rows, and integrated "Load more" as virtual row. Only renders visible entries to the DOM.
 
 ### i18n coverage gaps
 
