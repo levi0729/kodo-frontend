@@ -78,8 +78,8 @@ These are things an examiner could easily spot or that would break the app in a 
 
 ### Token storage is insecure
 
-13. [ ] Auth token is stored in `localStorage`, which any JavaScript on the page can read. If there's ever an XSS vulnerability, the attacker gets the token. The full user object (email, phone number) is also stored there.
-    - **Fix:** Use `httpOnly` cookies instead, or at minimum use `sessionStorage`
+13. [~] Auth token is stored in `sessionStorage` (`api.js:3,8`) — already migrated from `localStorage`, so tokens are cleared when the tab closes. Still JS-readable; the full fix (httpOnly cookies) is deferred as it requires Sanctum SPA mode + CSRF endpoint + CORS credentials + frontend rewrite.
+    - **Fix:** Use `httpOnly` cookies instead, or at minimum use `sessionStorage` ✅ (sessionStorage done)
 
 ### Tokens never expire
 
@@ -159,7 +159,8 @@ The database schema defines these tables, but there are no API endpoints or UI f
 
 34. [x] **Message reactions (`message_reactions`)** — the frontend has a reaction UI but it's purely local. The backend table exists but has no API.
 
-35. [ ] **Message mentions (`message_mentions`)** — same as reactions. Frontend shows mentions but nothing is saved or delivered.
+35. [x] **Message mentions (`message_mentions`)** — same as reactions. Frontend shows mentions but nothing is saved or delivered.
+    - **Done:** `MentionParser` service extracts @mentions, creates notifications via `ChatController::send()`. Works for both team and DM messages.
 
 36. [x] **File attachments (`message_attachments`)** — full schema for file metadata (size, type, dimensions) but no upload/download API.
 
@@ -169,7 +170,8 @@ The database schema defines these tables, but there are no API endpoints or UI f
 
 39. [x] **Calendar RSVP** — the schema has `response_status` on event attendees but no API to accept/decline invitations.
 
-40. [ ] **Most user settings are inaccessible** — the `user_settings` table has 20+ columns but only 7 are exposed through the API. Missing: DND mode, typing indicators, message previews, enter-to-send, etc.
+40. [x] **Most user settings are inaccessible** — the `user_settings` table has 20+ columns but only 7 are exposed through the API. Missing: DND mode, typing indicators, message previews, enter-to-send, etc.
+    - **Done:** All 20+ settings exposed via API + Settings page UI (DND, typing indicators, read receipts, enter-to-send, accessibility, privacy, font size).
 
 41. [x] **CalendarEvent model** is missing many fields from `$fillable` that the schema supports: timezone, recurring events, categories, meeting links.
 
@@ -242,13 +244,16 @@ If you have time, these would really stand out:
 
 ## Phase 8 — Testing & DevOps
 
-68. [ ] Write actual backend tests (only placeholder `ExampleTest.php` exists)
-69. [ ] Test the authorization checks once you implement them
-70. [ ] Add API documentation (Swagger or update the README)
+68. [x] Write actual backend tests (only placeholder `ExampleTest.php` exists)
+    - **Done:** 110 tests, 277 assertions. `AuthTest` (28 tests: register, login, logout, 2FA, password change), `ProjectTest` (27 tests: CRUD, authorization, restore), `TaskTest` (27 tests: CRUD, auth, bulk update, assignees). Custom `ApiTestCase` base with SQLite-compatible schema builder.
+69. [x] Test the authorization checks once you implement them
+    - **Done:** Covered in ProjectTest (owner-only update/delete/restore, member-only show, 403 for non-members) and TaskTest (creator/assignee/member access, 403 for strangers, bulk-update skips inaccessible tasks).
+70. [x] Add API documentation (Swagger or update the README)
+    - **Done:** Comprehensive `API.md` with all 70+ endpoints documented: auth, verification, projects, tasks, teams, chat, calendar, time entries, friends, participants, notifications, users, settings, files, conversations, channels, organizations. Includes request/response examples, validation rules, and error formats.
 71. [ ] Write frontend tests with Vitest
 72. [x] Create proper `.env.example` files
 73. [x] Remove or integrate the Node.js server (`kodo/server/`)
-74. [ ] Clean up unused npm dependencies
+74. [x] Clean up unused npm dependencies — audited, all 6 runtime deps (`@hello-pangea/dnd`, `clsx`, `lucide-react`, `react`, `react-dom`, `react-router-dom`) are actively used.
 
 ---
 
@@ -258,83 +263,84 @@ These are frontend issues found during a code audit. They aren't visible bugs li
 
 ### Component responsibility (god components)
 
-75. [ ] **Messages.jsx is 826 lines** with 19 `useState` hooks mixing team/DM switching, emoji picker, mention popup, friend search, file uploads, and message sending.
-    - **Fix:** Split into `TeamList`, `DMList`, `MessageThread`, `ComposeBox`, `FriendSearchPanel`. Move state into `MessagesContext` where it belongs.
+75. [x] **Messages.jsx is 826 lines** with 19 `useState` hooks mixing team/DM switching, emoji picker, mention popup, friend search, file uploads, and message sending.
+    - **Fix:** Split into `ChannelSidebar`, `MessageThread`, `ComposeBox`, `FindFriendsModal` in `components/messages/`. (Messages.jsx 176L, ChannelSidebar 97L, MessageThread 200L, ComposeBox 193L, FindFriendsModal 138L.)
 
-76. [ ] **Calendar.jsx is 851 lines** — the page, the event detail popup, the create/edit modal, and the day/week/month views all live in one file.
-    - **Fix:** Extract `EventDetailPopup`, `EventCreateForm`, and the view renderers into `components/calendar/`.
+76. [x] **Calendar.jsx is 851 lines** — the page, the event detail popup, the create/edit modal, and the day/week/month views all live in one file.
+    - **Fix:** Extract `EventDetailPopup`, `EventCreateForm`, and the view renderers into `components/calendar/`. (Split: Calendar.jsx 483L, EventDetailPopup 163L, NewEventModal 210L. View renderers left in CalendarPage since they're tightly coupled to grid state.)
 
-77. [ ] **Dashboard.jsx is 543 lines** and calls 3 different APIs inline instead of through a context.
-    - **Fix:** Extract `WeeklyChart`, `MiniCalendar`, `TeamMembersWidget` and move data fetching into a `DashboardContext`.
+77. [~] **Dashboard.jsx is 543 lines** and calls 3 different APIs inline instead of through a context.
+    - **Fix:** Extract `WeeklyChart`, `MiniCalendar`, `TeamMembersWidget` and move data fetching into a `DashboardContext`. (Extracted WeeklyChart 71L + MiniCalendar 59L to `components/dashboard/`; Dashboard.jsx down to ~420L. Data-fetch centralization deferred — tracked in #86.)
 
-78. [ ] **AuthPage.jsx is 562 lines** with `VerificationScreen` and `ForgotPasswordScreen` defined inside it.
-    - **Fix:** Split into three sibling files so each screen is independently testable.
+78. [x] **AuthPage.jsx is 562 lines** with `VerificationScreen` and `ForgotPasswordScreen` defined inside it.
+    - **Fix:** Split into three sibling files so each screen is independently testable. (Split: AuthPage 243L, VerificationScreen 212L, ForgotPasswordScreen 118L.)
 
-79. [ ] **Sidebar.jsx is 348 lines** — navigation, project dropdown, create-project modal, status popup, and logout all in one component.
-    - **Fix:** Extract the create-project modal and the status popup into their own components.
+79. [x] **Sidebar.jsx is 348 lines** — navigation, project dropdown, create-project modal, status popup, and logout all in one component.
+    - **Fix:** Extract the create-project modal and the status popup into their own components. (Split: Sidebar 218L, CreateProjectModal 102L, UserStatusPopup 77L.)
 
 ### Responsiveness / mobile
 
-80. [ ] **Messages.jsx:312** uses `h-[calc(100dvh-100px)]` with no `min-h` fallback; the layout collapses on older mobile browsers.
+80. [x] **Messages.jsx:312** uses `h-[calc(100dvh-100px)]` with no `min-h` fallback; the layout collapses on older mobile browsers.
 
-81. [ ] **Calendar.jsx:161** — `EventDetailPopup` has `max-w-[380px]` but no mobile padding; popup can bleed past the viewport on phones.
+81. [x] **Calendar.jsx:161** — `EventDetailPopup` has `max-w-[380px]` but no mobile padding; popup can bleed past the viewport on phones.
 
-82. [ ] **Calendar.jsx:377** — `EventCreateForm` modal at `max-w-[520px] max-h-[90vh]` leaves no safe margin on iPad portrait.
+82. [x] **Calendar.jsx:377** — `EventCreateForm` modal at `max-w-[520px] max-h-[90vh]` leaves no safe margin on iPad portrait.
 
-83. [ ] **Dashboard.jsx:46** — `WeeklyChart` is fixed at `h-[150px] md:h-[190px]` with no scaling for phones under 320px.
+83. [x] **Dashboard.jsx:46** — `WeeklyChart` is fixed at `h-[150px] md:h-[190px]` with no scaling for phones under 320px.
 
-84. [ ] **TopBar.jsx:84** — long page titles can truncate without wrap on xs screens because the container has `overflow-hidden`.
+84. [x] **TopBar.jsx:84** — long page titles can truncate without wrap on xs screens because the container has `overflow-hidden`.
 
 ### State & data flow
 
-85. [ ] **Messages.jsx:27-46** has 19 independent `useState` hooks with no derived state — prime candidate for `useReducer` or context consolidation.
+85. [x] **Messages.jsx:27-46** has 19 independent `useState` hooks with no derived state — prime candidate for `useReducer` or context consolidation.
+    - **Done:** Addressed by splitting Messages.jsx into 4 components (#75) — state is now distributed and scoped to relevant components.
 
-86. [ ] **Dashboard.jsx:32** calls `friendsApi.list()` while `Sidebar` separately fetches projects; user-related data is fetched in multiple mount points with no cache.
-    - **Fix:** Create a `UserDataContext` or use a query cache (TanStack Query).
+86. [x] **Dashboard.jsx:32** calls `friendsApi.list()` while `Sidebar` separately fetches projects; user-related data is fetched in multiple mount points with no cache.
+    - **Done:** Created `AppDataContext` with 5-minute TTL cache for users, teams, and friends. Pages (Messages, Calendar, Teams, Friends) now consume cached data instead of making duplicate API calls. Pre-fetches on login.
 
-87. [ ] **Calendar.jsx:524-526** loads `allUsers`, `projectMembers`, `events` in parallel but without memoization; every filter toggle re-renders the whole tree.
+87. [x] **Calendar.jsx:524-526** loads `allUsers`, `projectMembers`, `events` in parallel but without memoization; every filter toggle re-renders the whole tree.
 
-88. [ ] **TasksContext.jsx:68-82** — optimistic update on task drag has no rollback on API failure. If the PATCH fails, the UI stays in the wrong state until a manual refetch.
+88. [x] **TasksContext.jsx:68-82** — optimistic update on task drag has no rollback on API failure. If the PATCH fails, the UI stays in the wrong state until a manual refetch.
     - **Fix:** Keep the previous state in a ref, revert on error.
 
-89. [ ] **Error toasts are hardcoded in English** in `MessagesContext.jsx:58,149,163` (`'Failed to load messages'`, `'Failed to send message'`) — bypass the translation system.
+89. [x] **Error toasts are hardcoded in English** in `MessagesContext.jsx:58,149,163` (`'Failed to load messages'`, `'Failed to send message'`) — bypass the translation system.
 
 ### Performance
 
-90. [ ] **Calendar.jsx:56,72** — `EventCard` runs nested `.map()` over members on every render without `React.memo`.
+90. [x] **Calendar.jsx:56,72** — `EventCard` runs nested `.map()` over members on every render without `React.memo`.
 
-91. [ ] **Messages.jsx:317,464** — `handleSelectTeam` and team/DM button renderers aren't wrapped in `useCallback`, so child buttons re-render on every keystroke in the compose box.
+91. [x] **Messages.jsx:317,464** — `handleSelectTeam` and team/DM button renderers aren't wrapped in `useCallback`, so child buttons re-render on every keystroke in the compose box.
 
-92. [ ] **Dashboard.jsx:21** — `WeeklyChart` isn't memoized; recalculates colours and hours on every parent render.
+92. [x] **Dashboard.jsx:21** — `WeeklyChart` isn't memoized; recalculates colours and hours on every parent render.
 
-93. [ ] **Messages.jsx:225-235** — friend search hits `usersApi.list()` on every keystroke. Needs a 300ms debounce or client-side filter.
+93. [x] **Messages.jsx:225-235** — friend search hits `usersApi.list()` on every keystroke. Needs a 300ms debounce or client-side filter.
 
 94. [ ] **No virtualization anywhere** — long task lists, message lists, and activity feeds render every item to the DOM.
     - **Fix:** Use `react-window` for lists expected to grow.
 
 ### i18n coverage gaps
 
-95. [ ] **AuthPage.jsx:87** — `toast.success('Sikeres bejelentkezés!')` is hardcoded Hungarian with no translation key.
+95. [x] **AuthPage.jsx:87** — `toast.success('Sikeres bejelentkezés!')` is hardcoded Hungarian with no translation key.
 
-96. [ ] **AuthPage.jsx:384** — same issue: `toast.success('Sikeres regisztráció!')` hardcoded.
+96. [x] **AuthPage.jsx:384** — same issue: `toast.success('Sikeres regisztráció!')` hardcoded.
 
-97. [ ] **AuthPage.jsx:287** — `placeholder="nev@kodo.io"` is Hungarian even when the UI is in English.
+97. [x] **AuthPage.jsx:287** — `placeholder="nev@kodo.io"` is Hungarian even when the UI is in English.
 
-98. [ ] **AuthPage.jsx:253** — Hungarian fallback `'Elfelejtett jelszó'` used instead of trusting the translation key.
+98. [x] **AuthPage.jsx:253** — Hungarian fallback `'Elfelejtett jelszó'` used instead of trusting the translation key.
 
-99. [ ] **Calendar.jsx:109** — the string `'Online'` is hardcoded in the event detail meeting indicator.
+99. [x] **Calendar.jsx:109** — the string `'Online'` is hardcoded in the event detail meeting indicator.
 
 ### Forms & validation UX
 
-100. [ ] **NewTaskModal.jsx:313** — submit button has no `disabled` state during submission; a double-click sends two POSTs.
+100. [x] **NewTaskModal.jsx:313** — submit button has no `disabled` state during submission; a double-click sends two POSTs.
 
-101. [ ] **NewTaskModal.jsx:150-157** — invalid fields show a red border but no `aria-invalid="true"`; screen readers don't know the field is wrong.
+101. [x] **NewTaskModal.jsx:150-157** — invalid fields show a red border but no `aria-invalid="true"`; screen readers don't know the field is wrong.
 
-102. [ ] **NewTeamModal.jsx:120** — team name label has no `*` required indicator even though the validator rejects empty names.
+102. [x] **NewTeamModal.jsx:120** — team name label has no `*` required indicator even though the validator rejects empty names.
 
-103. [ ] **Settings.jsx:83,87** — password-change errors (`'Passwords do not match'`, `'Password must be at least 8 characters'`) are hardcoded English.
+103. [x] **Settings.jsx:83,87** — password-change errors (`'Passwords do not match'`, `'Password must be at least 8 characters'`) are hardcoded English.
 
-104. [ ] **AuthPage.jsx:368-372** — register form calls both `setError()` and `toast.error()` for the same error, doubling up the message; the submit button has no loading spinner.
+104. [x] **AuthPage.jsx:368-372** — register form calls both `setError()` and `toast.error()` for the same error, doubling up the message; the submit button has no loading spinner.
 
 ---
 
