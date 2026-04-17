@@ -7,6 +7,7 @@ import { useToast } from '@/components/Toast';
 const MessagesContext = createContext(null);
 
 const POLL_INTERVAL = 3000; // 3 seconds
+const DM_ROOM_MULTIPLIER = 1_000_000_000; // Must match backend constant
 
 export function MessagesProvider({ children }) {
   const { isLoggedIn, currentUser } = useAuth();
@@ -72,13 +73,13 @@ export function MessagesProvider({ children }) {
 
   const openDM = useCallback((otherUserId) => {
     if (!currentUser) return;
-    const roomId = Math.min(currentUser.id, otherUserId) * 100000 + Math.max(currentUser.id, otherUserId);
+    const roomId = Math.min(currentUser.id, otherUserId) * DM_ROOM_MULTIPLIER + Math.max(currentUser.id, otherUserId);
     openRoom(roomId);
     return roomId;
   }, [currentUser, openRoom]);
 
   const openTeamRoom = useCallback((teamId) => {
-    openRoom(teamId); // Team room_id = team_id (always < 100000)
+    openRoom(teamId); // Team room_id = team_id
     return teamId;
   }, [openRoom]);
 

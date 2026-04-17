@@ -101,8 +101,8 @@ These are less critical but still worth fixing.
 17. [x] **No rate limiting on authenticated routes** — only the login/register endpoints have rate limiting. All other endpoints can be hammered unlimited.
     - **Fix:** Add `throttle:60,1` to the auth middleware group
 
-18. [ ] **Chat room ID system is fragile** — uses a magic number (100,000) to tell team rooms apart from DM rooms. If the app grows past 100,000 teams or users, everything breaks.
-    - **Fix:** Use a `type` column on the room or separate endpoints for team vs DM
+18. [x] **Chat room ID system is fragile** — uses a magic number (100,000) to tell team rooms apart from DM rooms. If the app grows past 100,000 teams or users, everything breaks.
+    - **Done:** Added `room_type` column ('dm'/'team') to `chat_rooms`. Authorization now queries DB for type instead of checking magic number threshold. DM multiplier increased from 100K to 1B (supports user IDs up to ~2 billion). Migration back-fills existing rows.
 
 19. [x] **Team owners can leave their own team**, which orphans it with no admin.
     - **Fix:** Block this or require transferring ownership first
