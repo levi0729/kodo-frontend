@@ -21,6 +21,7 @@ const ActivityLogPage = lazy(() => import('@/pages/ActivityLog'));
 const ProfilePage = lazy(() => import('@/pages/Profile'));
 import { ProjectProvider } from '@/context/ProjectContext';
 import { MessagesProvider } from '@/context/MessagesContext';
+import { AppDataProvider } from '@/context/AppDataContext';
 import { TasksProvider } from '@/context/TasksContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -161,13 +162,15 @@ export default function App() {
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <ProjectProvider>
-              <TasksProvider>
-                <MessagesProvider>
-                  <AppContent />
-                </MessagesProvider>
-              </TasksProvider>
-            </ProjectProvider>
+            <AppDataProvider>
+              <ProjectProvider>
+                <TasksProvider>
+                  <MessagesProvider>
+                    <AppContent />
+                  </MessagesProvider>
+                </TasksProvider>
+              </ProjectProvider>
+            </AppDataProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

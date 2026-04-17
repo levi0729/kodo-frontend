@@ -5,10 +5,10 @@ import ChannelSidebar from '@/components/messages/ChannelSidebar';
 import MessageThread from '@/components/messages/MessageThread';
 import ComposeBox from '@/components/messages/ComposeBox';
 import FindFriendsModal from '@/components/messages/FindFriendsModal';
-import { users as usersApi, teams as teamsApi, friends as friendsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useAppData } from '@/context/AppDataContext';
 
 export default function MessagesPage({ dmUserId, teamId }) {
   const { currentUser } = useAuth();
@@ -18,35 +18,19 @@ export default function MessagesPage({ dmUserId, teamId }) {
     toggleReaction: toggleReactionApi, addNotification
   } = useMessages();
   const { t } = useTheme();
+  const {
+    allUsers, userTeams,
+    friendsList, setFriendsList,
+    pendingRequests, setPendingRequests,
+  } = useAppData();
 
-  const [allUsers, setAllUsers] = useState([]);
-  const [userTeams, setUserTeams] = useState([]);
-  const [friendsList, setFriendsList] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const dataLoading = allUsers.length === 0 && userTeams.length === 0;
 
   const [activeTeamId, setActiveTeamId] = useState(null);
   const [activeDmUserId, setActiveDmUserId] = useState(null);
   const [dmSearch, setDmSearch] = useState('');
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [showFindFriends, setShowFindFriends] = useState(false);
-
-  // Fetch users, teams, and friends from API
-  useEffect(() => {
-    setDataLoading(true);
-    Promise.all([
-      usersApi.list().catch(() => ({ data: [] })),
-      teamsApi.list().catch(() => ({ data: [] })),
-      friendsApi.list().catch(() => ({ friends: [] })),
-      friendsApi.pending().catch(() => ({ pending_requests: [] })),
-    ]).then(([usersRes, teamsRes, friendsRes, pendingRes]) => {
-      setAllUsers(usersRes.users || usersRes.data || []);
-      setUserTeams(teamsRes.teams || teamsRes.data || []);
-      setFriendsList(friendsRes.friends || []);
-      setPendingRequests(pendingRes.pending_requests || []);
-      setDataLoading(false);
-    });
-  }, []);
 
   // Set initial team once data is loaded
   useEffect(() => {

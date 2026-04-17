@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil, Hash, Megaphone, X } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
-import { teams as teamsApi, users as usersApi, participants as participantsApi, channels as channelsApi } from '@/services/api';
+import { teams as teamsApi, participants as participantsApi, channels as channelsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import NewTeamModal from '@/components/NewTeamModal';
 import TeamMemberPopup from '@/components/TeamMemberPopup';
 import { useTheme } from '@/context/ThemeContext';
+import { useAppData } from '@/context/AppDataContext';
 
 function TeamChannelsSection({ team, isOwner, onStartChat }) {
   const toast = useToast();
@@ -195,19 +196,15 @@ export default function TeamsPage({ onNavigate }) {
   const { currentUser } = useAuth();
   const toast = useToast();
   const [teams, setTeams] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [teamsLoading, setTeamsLoading] = useState(true);
   const { activeProject, userProjects } = useProject();
   const { t } = useTheme();
+  const { allUsers, invalidate: invalidateCache } = useAppData();
 
   useEffect(() => {
     setTeamsLoading(true);
-    Promise.all([
-      teamsApi.list().catch(() => ({ data: [] })),
-      usersApi.list().catch(() => ({ data: [] })),
-    ]).then(([teamsRes, usersRes]) => {
+    teamsApi.list().catch(() => ({ data: [] })).then((teamsRes) => {
       setTeams(teamsRes.teams || teamsRes.data || []);
-      setAllUsers(usersRes.users || usersRes.data || []);
       setTeamsLoading(false);
     });
   }, []);

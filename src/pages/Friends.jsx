@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Loader2, MessageSquare, UserMinus, UserPlus, Search, Check, X, Clock } from 'lucide-react';
 import Avatar from '@/components/Avatar';
-import { friends as friendsApi, users as usersApi } from '@/services/api';
+import { friends as friendsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { useTheme } from '@/context/ThemeContext';
+import { useAppData } from '@/context/AppDataContext';
 
 const TABS = ['friends', 'pending', 'find'];
 
@@ -14,25 +15,24 @@ export default function FriendsPage({ onNavigate }) {
   const [friendsList, setFriendsList] = useState([]);
   const [pendingList, setPendingList] = useState([]);
   const [sentList, setSentList] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { currentUser } = useAuth();
   const toast = useToast();
   const { t } = useTheme();
+  const { allUsers, invalidate: invalidateCache } = useAppData();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [friendsRes, pendingRes, sentRes, usersRes] = await Promise.all([
+      const [friendsRes, pendingRes, sentRes] = await Promise.all([
         friendsApi.list().catch(() => ({ data: [] })),
         friendsApi.pending().catch(() => ({ data: [] })),
         friendsApi.sent().catch(() => ({ data: [] })),
-        usersApi.list().catch(() => ({ data: [] })),
       ]);
       setFriendsList(friendsRes.friends || friendsRes.data || []);
       setPendingList(pendingRes.friends || pendingRes.data || []);
       setSentList(sentRes.friends || sentRes.data || []);
-      setAllUsers(usersRes.users || usersRes.data || []);
+      invalidateCache('friends');
     } catch {
       // errors already handled per-request
     } finally {

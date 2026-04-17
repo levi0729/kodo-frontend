@@ -7,10 +7,11 @@ import Avatar, { AvatarStack } from '@/components/Avatar';
 import EventDetailPopup from '@/components/calendar/EventDetailPopup';
 import NewEventModal from '@/components/calendar/NewEventModal';
 import { useProject } from '@/context/ProjectContext';
-import { calendarEvents as calendarApi, users as usersApi, participants as participantsApi } from '@/services/api';
+import { calendarEvents as calendarApi, participants as participantsApi } from '@/services/api';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useAppData } from '@/context/AppDataContext';
 
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 const TOTAL_SPAN = HOURS.length;
@@ -151,9 +152,9 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [events, setEvents] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [projectMembers, setProjectMembers] = useState([]);
   const [calLoading, setCalLoading] = useState(true);
+  const { allUsers } = useAppData();
 
   useEffect(() => {
     if (!activeProject) {
@@ -163,11 +164,9 @@ export default function CalendarPage() {
     setCalLoading(true);
     Promise.all([
       calendarApi.list().catch(() => ({ data: [] })),
-      usersApi.list().catch(() => ({ data: [] })),
       participantsApi.list('project', activeProject.id).catch(() => ({ data: [] })),
-    ]).then(([eventsRes, usersRes, membersRes]) => {
+    ]).then(([eventsRes, membersRes]) => {
       setEvents(eventsRes.calendar_events || eventsRes.data || []);
-      setAllUsers(usersRes.users || usersRes.data || []);
       setProjectMembers((membersRes.participants || membersRes.data || []).map(p => p.user || p));
       setCalLoading(false);
     });
