@@ -156,7 +156,10 @@ export default function CalendarPage() {
   const [calLoading, setCalLoading] = useState(true);
 
   useEffect(() => {
-    if (!activeProject) return;
+    if (!activeProject) {
+      setCalLoading(false);
+      return;
+    }
     setCalLoading(true);
     Promise.all([
       calendarApi.list().catch(() => ({ data: [] })),
