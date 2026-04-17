@@ -81,18 +81,18 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
   const pageLabel = t.topbar.pageLabels[activePage] || activePage;
 
   return (
-    <header className="h-[52px] flex items-center justify-between px-3 md:px-8 border-b border-white/[0.06] flex-shrink-0">
-      <div className="flex items-center gap-2 text-[13px]">
+    <header className="h-[52px] flex items-center justify-between px-3 md:px-8 border-b border-white/[0.06] flex-shrink-0 gap-2">
+      <div className="flex items-center gap-2 text-[13px] min-w-0 flex-1">
         <button
           onClick={onMenuToggle}
           aria-label="Toggle menu"
-          className="p-2 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none lg:hidden"
+          className="p-2 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none lg:hidden flex-shrink-0"
         >
           <Menu size={20} />
         </button>
-        <span className="text-kodo-text-dim font-medium hidden sm:inline">{activeProject?.name}</span>
-        <span className="text-kodo-text-dim/40 hidden sm:inline">/</span>
-        <span className="text-kodo-text-secondary font-medium">{pageLabel}</span>
+        <span className="text-kodo-text-dim font-medium hidden sm:inline truncate">{activeProject?.name}</span>
+        <span className="text-kodo-text-dim/40 hidden sm:inline flex-shrink-0">/</span>
+        <span className="text-kodo-text-secondary font-medium truncate">{pageLabel}</span>
       </div>
 
       <div className="flex items-center gap-1 relative" ref={dropdownRef}>

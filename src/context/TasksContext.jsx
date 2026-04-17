@@ -64,23 +64,25 @@ export function TasksProvider({ children }) {
     if (currentIndex >= STATUS_ORDER.length - 1) return;
     const nextStatus = STATUS_ORDER[currentIndex + 1];
 
-    // Optimistic update
-    setTasks(prev =>
-      prev.map(t =>
+    // Optimistic update — capture previous state for rollback
+    let previous;
+    setTasks(prev => {
+      previous = prev;
+      return prev.map(t =>
         t.id === taskId
           ? { ...t, status: nextStatus, progress: nextStatus === 'done' ? 100 : t.progress }
           : t
-      )
-    );
+      );
+    });
 
     try {
       await tasksApi.update(taskId, { status: nextStatus });
       toast.success(`Task moved to ${nextStatus.replace('_', ' ')}`);
     } catch (err) {
       toast.error('Failed to update task: ' + err.message);
-      fetchTasks(); // Revert on error
+      if (previous) setTasks(previous); // instant revert, no refetch needed
     }
-  }, [fetchTasks, toast]);
+  }, [toast]);
 
   const createTask = useCallback(async (taskData) => {
     setLoading(true);
@@ -108,17 +110,21 @@ export function TasksProvider({ children }) {
   }, [activeProjectId, toast]);
 
   const updateTask = useCallback(async (taskId, updates) => {
-    // Optimistic update for instant DnD feedback
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    // Optimistic update for instant DnD feedback — capture previous for rollback
+    let previous;
+    setTasks(prev => {
+      previous = prev;
+      return prev.map(t => t.id === taskId ? { ...t, ...updates } : t);
+    });
     try {
       const data = await tasksApi.update(taskId, updates);
       setTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
       return data.task;
     } catch (err) {
       toast.error('Failed to update task: ' + err.message);
-      fetchTasks(); // Revert on error
+      if (previous) setTasks(previous); // instant revert, no refetch needed
     }
-  }, [toast, fetchTasks]);
+  }, [toast]);
 
   const deleteTask = useCallback(async (taskId) => {
     try {

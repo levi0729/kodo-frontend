@@ -13,7 +13,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const {
     messages, messagesLoading,
     openDM, openTeamRoom, sendMessage, sendTeamMessage,
-    reactionOverrides, setReactionOverrides, addNotification
+    toggleReaction: toggleReactionApi, addNotification
   } = useMessages();
   const { t } = useTheme();
 
@@ -144,53 +144,26 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const displayMessages = (activeDmUserId || activeTeamId) ? messages : [];
   const canSend = !!(activeDmUserId || activeTeamId);
 
-  const getReactions = (msg) => {
-    if (reactionOverrides[msg.id] !== undefined) return reactionOverrides[msg.id];
-    return msg.reactions || [];
-  };
+  const getReactions = (msg) => msg.reactions || [];
 
   const toggleReaction = (msgId, emoji) => {
-    setReactionOverrides(prev => {
-      const origMsg = displayMessages.find(m => m.id === msgId);
-      const current = prev[msgId] !== undefined
-        ? prev[msgId]
-        : [...(origMsg?.reactions || [])].map(r => ({ ...r, users: [...r.users] }));
-
-      const existing = current.find(r => r.emoji === emoji);
-      const alreadyReactedWith = existing?.users.includes(currentUser.id);
-      let updated;
-
-      updated = current.map(r => ({
-        ...r,
-        users: r.users.filter(id => id !== currentUser.id)
-      })).filter(r => r.users.length > 0);
-
-      if (!alreadyReactedWith) {
-        const target = updated.find(r => r.emoji === emoji);
-        if (target) {
-          updated = updated.map(r => r.emoji === emoji ? { ...r, users: [...r.users, currentUser.id] } : r);
-        } else {
-          updated = [...updated, { emoji, users: [currentUser.id] }];
-        }
-      }
-      return { ...prev, [msgId]: updated };
-    });
+    toggleReactionApi(msgId, emoji);
     setEmojiPickerMsgId(null);
   };
 
-  const handleSelectTeam = (tId) => {
+  const handleSelectTeam = useCallback((tId) => {
     setActiveTeamId(tId);
     setActiveDmUserId(null);
     setMobileShowChat(true);
     openTeamRoom(tId);
-  };
+  }, [openTeamRoom]);
 
-  const handleSelectDm = (userId) => {
+  const handleSelectDm = useCallback((userId) => {
     setActiveDmUserId(userId);
     setActiveTeamId(null);
     setMobileShowChat(true);
     openDM(userId);
-  };
+  }, [openDM]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -248,17 +221,20 @@ export default function MessagesPage({ dmUserId, teamId }) {
     inputRef.current?.focus();
   };
 
-  // Friend search
+  // Friend search — debounced so we don't hit the API on every keystroke
   useEffect(() => {
     if (!friendSearch.trim()) {
       setFriendSearchResults([]);
       return;
     }
     const query = friendSearch.trim();
-    usersApi.list({ search: query }).then(res => {
-      const users = (res.users || []).filter(u => u.id !== currentUser?.id);
-      setFriendSearchResults(users);
-    }).catch(() => setFriendSearchResults([]));
+    const timer = setTimeout(() => {
+      usersApi.list({ search: query }).then(res => {
+        const users = (res.users || []).filter(u => u.id !== currentUser?.id);
+        setFriendSearchResults(users);
+      }).catch(() => setFriendSearchResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
   }, [friendSearch, currentUser?.id]);
 
   const handleSendFriendRequest = async (userId) => {
@@ -287,16 +263,13 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
   const handleSendMessage = async () => {
     if (!message.trim() && attachments.length === 0) return;
-    // Build message text — include attachment names if no text provided
-    let msgText = message.trim();
-    if (!msgText && attachments.length > 0) {
-      msgText = attachments.map(a => `[${a.name}]`).join(' ');
-    }
+    const msgText = message.trim();
+    const fileList = attachments.map(a => a.file).filter(Boolean);
     try {
       if (activeDmUserId) {
-        await sendMessage(activeDmUserId, msgText);
+        await sendMessage(activeDmUserId, msgText, fileList);
       } else if (activeTeamId) {
-        await sendTeamMessage(activeTeamId, msgText);
+        await sendTeamMessage(activeTeamId, msgText, fileList);
       }
     } catch { /* handled by context */ }
     // Process mention notifications — match each @Name by looking up known display names
@@ -339,7 +312,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-100px)]">
+    <div className="flex h-[calc(100dvh-100px)] min-h-[400px]">
       <div className={`${mobileShowChat ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] border-r-0 md:border-r border-white/[0.06] flex-col flex-shrink-0`}>
         <div className="p-4">
           <div className="kodo-section-title">{t.messagesPage.teams}</div>
@@ -574,24 +547,39 @@ export default function MessagesPage({ dmUserId, teamId }) {
                       </div>
                       {msg.attachments?.length > 0 && (
                         <div className={`flex flex-wrap gap-2 mt-1.5 ${own ? 'justify-end' : ''}`}>
-                          {msg.attachments.map((att, i) => (
-                            att.preview ? (
-                              <img
-                                key={i}
-                                src={att.preview}
-                                alt={att.name}
-                                className="max-w-[240px] max-h-[180px] rounded-xl border border-white/[0.06] object-cover"
-                              />
+                          {msg.attachments.map((att, i) => {
+                            const name = att.file_name || att.name;
+                            const url = att.file_url || att.preview;
+                            const type = att.file_type || att.type || '';
+                            const size = att.file_size ?? att.size;
+                            const isImage = type.startsWith('image/');
+                            return isImage && url ? (
+                              <a key={i} href={url} target="_blank" rel="noreferrer">
+                                <img
+                                  src={url}
+                                  alt={name}
+                                  className="max-w-[240px] max-h-[180px] rounded-xl border border-white/[0.06] object-cover"
+                                />
+                              </a>
                             ) : (
-                              <div key={i} className="flex items-center gap-2 px-3 py-2 bg-white/[0.04] border border-white/[0.06] rounded-xl">
+                              <a
+                                key={i}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={name}
+                                className="flex items-center gap-2 px-3 py-2 bg-white/[0.04] border border-white/[0.06] rounded-xl no-underline hover:bg-white/[0.06] transition-colors"
+                              >
                                 <FileText size={16} className="text-kodo-text-muted flex-shrink-0" />
                                 <div className="min-w-0">
-                                  <div className="text-[12px] text-kodo-text truncate max-w-[180px]">{att.name}</div>
-                                  <div className="text-[10px] text-kodo-text-dim">{formatFileSize(att.size)}</div>
+                                  <div className="text-[12px] text-kodo-text truncate max-w-[180px]">{name}</div>
+                                  {size != null && (
+                                    <div className="text-[10px] text-kodo-text-dim">{formatFileSize(size)}</div>
+                                  )}
                                 </div>
-                              </div>
-                            )
-                          ))}
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                       {reactions.length > 0 && (

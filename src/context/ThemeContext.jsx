@@ -4,16 +4,16 @@ import translations from '@/i18n/translations';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('kodo-theme') || 'dark');
-  const [language, setLanguage] = useState(() => localStorage.getItem('kodo-lang') || 'hu');
+  const [theme, setTheme] = useState(() => sessionStorage.getItem('kodo-theme') || 'dark');
+  const [language, setLanguage] = useState(() => sessionStorage.getItem('kodo-lang') || 'hu');
 
   useEffect(() => {
-    localStorage.setItem('kodo-theme', theme);
+    sessionStorage.setItem('kodo-theme', theme);
     document.documentElement.classList.toggle('light', theme === 'light');
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('kodo-lang', language);
+    sessionStorage.setItem('kodo-lang', language);
   }, [language]);
 
   const t = translations[language] || translations.hu;

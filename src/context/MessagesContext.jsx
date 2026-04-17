@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { chat as chatApi } from '@/services/api';
+import { chat as chatApi, files as filesApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 
 const MessagesContext = createContext(null);
@@ -9,6 +10,7 @@ const POLL_INTERVAL = 3000; // 3 seconds
 
 export function MessagesProvider({ children }) {
   const { isLoggedIn, currentUser } = useAuth();
+  const { t } = useTheme();
   const toast = useToast();
 
   const [conversations, setConversations] = useState([]);
@@ -19,7 +21,6 @@ export function MessagesProvider({ children }) {
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
-  const [reactionOverrides, setReactionOverrides] = useState({});
 
   // Polling ref
   const pollRef = useRef(null);
@@ -56,11 +57,11 @@ export function MessagesProvider({ children }) {
       setMessages(msgs);
       lastMessageIdRef.current = msgs.length > 0 ? Math.max(...msgs.map(m => m.id)) : 0;
     } catch (err) {
-      toast.error('Failed to load messages');
+      toast.error(t.chatErrors.loadFailed);
     } finally {
       setMessagesLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const openRoom = useCallback((roomId) => {
     setMessages([]);
@@ -123,32 +124,62 @@ export function MessagesProvider({ children }) {
 
   // ── Send message ────────────────────────────────────────
 
-  const sendMessage = useCallback(async (receiverId, messageText) => {
+  // Upload files in parallel, return their metadata for the send endpoint.
+  const uploadAttachmentFiles = useCallback(async (files) => {
+    if (!files?.length) return [];
+    const results = await Promise.all(files.map(f => filesApi.upload(f).then(r => r.file)));
+    return results.map(f => ({
+      file_name: f.file_name,
+      file_type: f.file_type,
+      file_size: f.file_size,
+      file_url:  f.file_url,
+      width:     f.width,
+      height:    f.height,
+    }));
+  }, []);
+
+  const sendMessage = useCallback(async (receiverId, messageText, files = []) => {
     try {
-      const data = await chatApi.send(receiverId, messageText);
+      const attachments = await uploadAttachmentFiles(files);
+      const data = await chatApi.sendWithAttachments({ receiverId, message: messageText, attachments });
       const msg = data.message;
       setMessages(prev => [...prev, msg]);
       lastMessageIdRef.current = Math.max(lastMessageIdRef.current, msg.id);
       fetchConversations();
       return msg;
     } catch (err) {
-      toast.error('Failed to send message: ' + err.message);
+      toast.error(t.chatErrors.sendFailed + ': ' + err.message);
       throw err;
     }
-  }, [toast, fetchConversations]);
+  }, [toast, t, fetchConversations, uploadAttachmentFiles]);
 
-  const sendTeamMessage = useCallback(async (teamId, messageText) => {
+  const sendTeamMessage = useCallback(async (teamId, messageText, files = []) => {
     try {
-      const data = await chatApi.sendTeam(teamId, messageText);
+      const attachments = await uploadAttachmentFiles(files);
+      const data = await chatApi.sendWithAttachments({ teamId, message: messageText, attachments });
       const msg = data.message;
       setMessages(prev => [...prev, msg]);
       lastMessageIdRef.current = Math.max(lastMessageIdRef.current, msg.id);
       return msg;
     } catch (err) {
-      toast.error('Failed to send message: ' + err.message);
+      toast.error(t.chatErrors.sendFailed + ': ' + err.message);
       throw err;
     }
-  }, [toast]);
+  }, [toast, t, uploadAttachmentFiles]);
+
+  // ── Reactions ───────────────────────────────────────────
+
+  const toggleReaction = useCallback(async (messageId, emoji) => {
+    try {
+      const data = await chatApi.toggleReaction(messageId, emoji);
+      const updated = data.message;
+      if (updated) {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: updated.reactions } : m));
+      }
+    } catch (err) {
+      toast.error(t.chatErrors.reactFailed);
+    }
+  }, [toast, t]);
 
   // ── Mark as read ────────────────────────────────────────
 
@@ -200,8 +231,7 @@ export function MessagesProvider({ children }) {
       sendMessage,
       sendTeamMessage,
       markAsRead,
-      reactionOverrides,
-      setReactionOverrides,
+      toggleReaction,
       notifications,
       addNotification,
       markNotificationRead,

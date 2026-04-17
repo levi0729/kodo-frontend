@@ -19,6 +19,7 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
   });
 
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const modalRef = useRef(null);
 
   const colors = [
@@ -61,11 +62,12 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (validateForm()) {
-      onTeamCreate({
+    if (submitting || !validateForm()) return;
+    setSubmitting(true);
+    try {
+      await onTeamCreate({
         ...formData,
         created_by: currentUser?.id || 1
       });
@@ -80,6 +82,8 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
       });
       setErrors({});
       onClose();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,19 +117,22 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="mb-5">
             <label className="block text-[13px] font-medium text-kodo-text mb-2">
-              {m.teamName}
+              {m.teamName} <span className="text-red-400" aria-hidden="true">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              aria-required="true"
+              aria-invalid={errors.name ? 'true' : 'false'}
+              aria-describedby={errors.name ? 'team-name-error' : undefined}
               className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 ${
                 errors.name ? 'border-red-500/50' : 'border-white/[0.08]'
               }`}
               placeholder={m.teamNamePlaceholder}
             />
             {errors.name && (
-              <p className="text-[11px] text-red-400 mt-1">{errors.name}</p>
+              <p id="team-name-error" className="text-[11px] text-red-400 mt-1">{errors.name}</p>
             )}
           </div>
 
@@ -184,19 +191,22 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
           {formData.visibility === 'private' && (
             <div className="mb-5">
               <label className="block text-[13px] font-medium text-kodo-text mb-2">
-                {m.password}
+                {m.password} <span className="text-red-400" aria-hidden="true">*</span>
               </label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                aria-required="true"
+                aria-invalid={errors.password ? 'true' : 'false'}
+                aria-describedby={errors.password ? 'team-password-error' : undefined}
                 className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 ${
                   errors.password ? 'border-red-500/50' : 'border-white/[0.08]'
                 }`}
                 placeholder={m.passwordPlaceholder}
               />
               {errors.password && (
-                <p className="text-[11px] text-red-400 mt-1">{errors.password}</p>
+                <p id="team-password-error" className="text-[11px] text-red-400 mt-1">{errors.password}</p>
               )}
             </div>
           )}
@@ -224,7 +234,7 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
 
           <div className="mb-6">
             <label className="block text-[13px] font-medium text-kodo-text mb-2">
-              {m.members}
+              {m.members} <span className="text-red-400" aria-hidden="true">*</span>
             </label>
             <div className="max-h-40 overflow-y-auto border border-white/[0.08] rounded-lg p-2">
               {availableUsers.map(user => (
@@ -252,7 +262,7 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
               ))}
             </div>
             {errors.members && (
-              <p className="text-[11px] text-red-400 mt-1">{errors.members}</p>
+              <p className="text-[11px] text-red-400 mt-1" role="alert">{errors.members}</p>
             )}
           </div>
 
@@ -260,13 +270,15 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-kodo-text rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer text-[13px] font-medium"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-kodo-text rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {m.cancel}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {m.createTeam}
             </button>

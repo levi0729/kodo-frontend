@@ -22,6 +22,7 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
 
   const [labelInput, setLabelInput] = useState('');
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const modalRef = useRef(null);
 
   const [teamMembers, setTeamMembers] = useState([]);
@@ -78,15 +79,19 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      onTaskCreate({
+    if (submitting || !validateForm()) return;
+    setSubmitting(true);
+    try {
+      await onTaskCreate({
         ...formData,
         estimated_hours: formData.estimated_hours ? Number(formData.estimated_hours) : 0,
       });
       resetForm();
       onClose();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -147,13 +152,15 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              aria-invalid={errors.title ? 'true' : 'false'}
+              aria-describedby={errors.title ? 'task-title-error' : undefined}
               className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 ${
                 errors.title ? 'border-red-500/50' : 'border-white/[0.08]'
               }`}
               placeholder={m.taskNamePlaceholder}
             />
             {errors.title && (
-              <p className="text-[11px] text-red-400 mt-1">{errors.title}</p>
+              <p id="task-title-error" className="text-[11px] text-red-400 mt-1">{errors.title}</p>
             )}
           </div>
 
@@ -297,7 +304,7 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
               ))}
             </div>
             {errors.assignees && (
-              <p className="text-[11px] text-red-400 mt-1">{errors.assignees}</p>
+              <p id="task-assignees-error" className="text-[11px] text-red-400 mt-1" role="alert">{errors.assignees}</p>
             )}
           </div>
 
@@ -305,13 +312,15 @@ export default function NewTaskModal({ isOpen, onClose, onTaskCreate, projectId 
             <button
               type="button"
               onClick={() => { resetForm(); onClose(); }}
-              className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-kodo-text rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer text-[13px] font-medium"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-kodo-text rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {m.cancel}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium flex items-center justify-center gap-1.5"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus size={14} />
               {m.createTask}

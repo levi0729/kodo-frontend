@@ -1,13 +1,13 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-let authToken = localStorage.getItem('kodo_token');
+let authToken = sessionStorage.getItem('kodo_token');
 
 function setToken(token) {
   authToken = token;
   if (token) {
-    localStorage.setItem('kodo_token', token);
+    sessionStorage.setItem('kodo_token', token);
   } else {
-    localStorage.removeItem('kodo_token');
+    sessionStorage.removeItem('kodo_token');
   }
 }
 
@@ -53,7 +53,7 @@ async function request(endpoint, options = {}) {
 
   if (res.status === 401) {
     setToken(null);
-    localStorage.removeItem('kodo_user');
+    sessionStorage.removeItem('kodo_user');
     // Dispatch event so AuthContext can handle logout without a race condition
     window.dispatchEvent(new Event('auth:expired'));
     throw new Error('Session expired. Please log in again.');
@@ -80,6 +80,41 @@ async function request(endpoint, options = {}) {
     throw error;
   }
 
+  return data;
+}
+
+// Multipart/form-data upload helper — mirrors request() but for binary bodies.
+async function uploadRequest(endpoint, formData) {
+  const config = {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+    },
+    body: formData,
+  };
+  if (authToken) config.headers['Authorization'] = `Bearer ${authToken}`;
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, config);
+  } catch {
+    throw new Error('Cannot reach server. Check your connection.');
+  }
+
+  if (res.status === 401) {
+    setToken(null);
+    sessionStorage.removeItem('kodo_user');
+    window.dispatchEvent(new Event('auth:expired'));
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const message = data?.message || data?.errors ? Object.values(data.errors || {}).flat().join(', ') : `Upload failed (${res.status})`;
+    const err = new Error(message || 'Upload failed');
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -111,7 +146,7 @@ export const auth = {
       await request('/auth/logout', { method: 'POST' });
     } finally {
       setToken(null);
-      localStorage.removeItem('kodo_user');
+      sessionStorage.removeItem('kodo_user');
     }
   },
 
@@ -340,6 +375,28 @@ export const chat = {
   async deleteMessage(messageId) {
     return request(`/chat/messages/${messageId}`, { method: 'DELETE' });
   },
+
+  async toggleReaction(messageId, emoji) {
+    return request(`/chat/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } });
+  },
+
+  async sendWithAttachments({ receiverId, teamId, message, attachments }) {
+    const body = { message: message || '' };
+    if (teamId) body.team_id = teamId;
+    if (receiverId) body.receiver_id = receiverId;
+    if (attachments && attachments.length) body.attachments = attachments;
+    return request('/chat/send', { method: 'POST', body });
+  },
+};
+
+// ── Files ─────────────────────────────────────────────────
+
+export const files = {
+  async upload(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return uploadRequest('/files/upload', formData);
+  },
 };
 
 // ── Friends ───────────────────────────────────────────────
@@ -456,6 +513,9 @@ export const calendarEvents = {
   async destroy(id) {
     return request(`/calendar-events/${id}`, { method: 'DELETE' });
   },
+  async rsvp(id, responseStatus) {
+    return request(`/calendar-events/${id}/rsvp`, { method: 'POST', body: { response_status: responseStatus } });
+  },
 };
 
 // ── Notifications ────────────────────────────────────────
@@ -472,6 +532,99 @@ export const notifications = {
   },
   async destroy(id) {
     return request(`/notifications/${id}`, { method: 'DELETE' });
+  },
+};
+
+// ── Channels (team sub-rooms) ────────────────────────────
+
+export const channels = {
+  async list(teamId) {
+    return request(`/channels?team_id=${teamId}`);
+  },
+
+  async show(id) {
+    return request(`/channels/${id}`);
+  },
+
+  async create({ team_id, name, description, channel_type }) {
+    return request('/channels', { method: 'POST', body: { team_id, name, description, channel_type } });
+  },
+
+  async update(id, data) {
+    return request(`/channels/${id}`, { method: 'PUT', body: data });
+  },
+
+  async destroy(id) {
+    return request(`/channels/${id}`, { method: 'DELETE' });
+  },
+
+  async messages(id, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/channels/${id}/messages${qs ? `?${qs}` : ''}`);
+  },
+
+  async sendMessage(id, { content, content_type, parent_message_id }) {
+    return request(`/channels/${id}/messages`, {
+      method: 'POST',
+      body: { content, content_type, parent_message_id },
+    });
+  },
+};
+
+// ── Conversations (group chats) ──────────────────────────
+
+export const conversations = {
+  async list() {
+    return request('/conversations');
+  },
+
+  async show(id) {
+    return request(`/conversations/${id}`);
+  },
+
+  async create({ name, user_ids }) {
+    return request('/conversations', { method: 'POST', body: { name, user_ids } });
+  },
+
+  async messages(id, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/conversations/${id}/messages${qs ? `?${qs}` : ''}`);
+  },
+
+  async sendMessage(id, content) {
+    return request(`/conversations/${id}/messages`, { method: 'POST', body: { content } });
+  },
+
+  async addParticipants(id, user_ids) {
+    return request(`/conversations/${id}/participants`, { method: 'POST', body: { user_ids } });
+  },
+
+  async leave(id) {
+    return request(`/conversations/${id}/leave`, { method: 'POST' });
+  },
+};
+
+// ── Organizations ────────────────────────────────────────
+
+export const organizations = {
+  async list() {
+    return request('/organizations');
+  },
+
+  async show(id) {
+    return request(`/organizations/${id}`);
+  },
+
+  async create(data) {
+    return request('/organizations', { method: 'POST', body: data });
+  },
+
+  async update(id, data) {
+    return request(`/organizations/${id}`, { method: 'PUT', body: data });
+  },
+
+  async destroy(id) {
+    return request(`/organizations/${id}`, { method: 'DELETE' });
   },
 };
 

@@ -2,24 +2,17 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Users, FolderKanban, MessageSquare,
   CalendarDays, Settings, ChevronDown,
-  Check, Plus, X, Eye, EyeOff, LogOut,
+  Check, Plus,
   Clock, UserPlus, Activity
 } from 'lucide-react';
 import clsx from 'clsx';
 import Avatar from './Avatar';
+import CreateProjectModal from './CreateProjectModal';
+import UserStatusPopup from './UserStatusPopup';
 import { useProject } from '@/context/ProjectContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { users as usersApi } from '@/services/api';
-
-const STATUS_OPTIONS = [
-  { key: 'online', color: '#22c55e' },
-  { key: 'away', color: '#f59e0b' },
-  { key: 'busy', color: '#ef4444' },
-  { key: 'dnd', color: '#ef4444' },
-  { key: 'offline', color: '#52525b' },
-];
 
 const NAV_ICONS = {
   dashboard: LayoutDashboard,
@@ -48,13 +41,10 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
   const [collapsed, setCollapsed] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectPassword, setNewProjectPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [showUserPopup, setShowUserPopup] = useState(false);
-  const { activeProject, setActiveProjectId, userProjects, addProject } = useProject();
+  const { activeProject, setActiveProjectId, userProjects } = useProject();
   const { unreadCount } = useMessages();
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const { t } = useTheme();
 
   const navItems = NAV_KEYS.map(key => {
@@ -213,135 +203,15 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
           </div>
 
           {showUserPopup && (
-            <div className="absolute bottom-full left-0 mb-2 w-[240px] bg-[#1a1a24] border border-white/[0.08] rounded-xl shadow-2xl p-4 z-50 animate-fade-in-up">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowUserPopup(false); }}
-                className="absolute top-3 right-3 text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none p-0"
-              >
-                <X size={14} />
-              </button>
-              <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/[0.06]">
-                <Avatar user={currentUser} size={40} showStatus />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-white truncate">{currentUser?.display_name}</div>
-                  <div className="text-[11px] text-kodo-text-dim truncate">{currentUser?.email}</div>
-                </div>
-              </div>
-              <div className="text-[11px] text-kodo-text-muted mb-3 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
-                {currentUser?.job_title || t.sidebar.noPosition}
-              </div>
-              <div className="mb-3 pb-3 border-b border-white/[0.06]">
-                <div className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider mb-2">{t.sidebar.status}</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt.key}
-                      onClick={() => {
-                        usersApi.updateStatus(opt.key).catch(() => {});
-                        if (currentUser) currentUser.presence_status = opt.key;
-                        setShowUserPopup(false);
-                      }}
-                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium cursor-pointer border transition-all ${
-                        currentUser?.presence_status === opt.key
-                          ? 'bg-white/[0.08] border-white/[0.15] text-white'
-                          : 'bg-transparent border-transparent text-kodo-text-muted hover:bg-white/[0.04]'
-                      }`}
-                    >
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: opt.color }} />
-                      {t.sidebar.statusLabels[opt.key]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={() => { setShowUserPopup(false); onNavigate('profile'); }}
-                className="w-full flex items-center justify-center gap-2 py-2 mb-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-[12px] font-medium cursor-pointer border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
-              >
-                <Settings size={14} />
-                {t.sidebar.viewProfile || (t.language === 'hu' ? 'Profil megtekintése' : 'View Profile')}
-              </button>
-              <button
-                onClick={() => { setShowUserPopup(false); logout(); }}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border border-red-500/20 hover:bg-red-500/20 transition-colors"
-              >
-                <LogOut size={14} />
-                {t.sidebar.logout}
-              </button>
-            </div>
+            <UserStatusPopup
+              onClose={() => setShowUserPopup(false)}
+              onNavigate={onNavigate}
+            />
           )}
         </div>
       </div>
 
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 animate-fade-in-up" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-[#1a1a24] border border-white/[0.08] rounded-2xl w-full max-w-[380px] mx-4 p-5 md:p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[15px] font-semibold text-kodo-text">{t.sidebar.newProjectTitle}</h3>
-              <button
-                onClick={() => { setShowCreateModal(false); setNewProjectName(''); setNewProjectPassword(''); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer border-none"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-medium text-kodo-text-dim uppercase tracking-[0.05em] mb-1.5">
-                  {t.sidebar.projectName}
-                </label>
-                <input
-                  type="text"
-                  value={newProjectName}
-                  onChange={e => setNewProjectName(e.target.value)}
-                  placeholder={t.sidebar.projectNamePlaceholder}
-                  className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[13px] text-kodo-text placeholder:text-kodo-text-dim/50 focus:outline-none focus:border-kodo-accent/50 focus:ring-1 focus:ring-kodo-accent/20 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-kodo-text-dim uppercase tracking-[0.05em] mb-1.5">
-                  {t.sidebar.password}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={newProjectPassword}
-                    onChange={e => setNewProjectPassword(e.target.value)}
-                    placeholder={t.sidebar.projectPassword}
-                    className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[13px] text-kodo-text placeholder:text-kodo-text-dim/50 focus:outline-none focus:border-kodo-accent/50 focus:ring-1 focus:ring-kodo-accent/20 transition-all pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none"
-                  >
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              disabled={!newProjectName.trim() || !newProjectPassword.trim()}
-              onClick={() => {
-                addProject(newProjectName.trim(), '', newProjectPassword.trim());
-                setShowCreateModal(false);
-                setNewProjectName('');
-                setNewProjectPassword('');
-              }}
-              className={clsx(
-                'w-full mt-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all border-none cursor-pointer',
-                newProjectName.trim() && newProjectPassword.trim()
-                  ? 'bg-kodo-accent text-white hover:bg-kodo-accent/90'
-                  : 'bg-white/[0.04] text-kodo-text-dim cursor-not-allowed'
-              )}
-            >
-              {t.sidebar.createProject}
-            </button>
-          </div>
-        </div>
-      )}
+      <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </nav>
     </>
   );

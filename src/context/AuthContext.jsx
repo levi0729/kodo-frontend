@@ -8,7 +8,7 @@ const DEVICE_TOKEN_KEY = 'kodo_device_token';
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('kodo_user');
+      const saved = sessionStorage.getItem('kodo_user');
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
@@ -21,18 +21,18 @@ export function AuthProvider({ children }) {
 
   // Restore session on mount
   useEffect(() => {
-    const token = localStorage.getItem('kodo_token');
+    const token = sessionStorage.getItem('kodo_token');
     // Safety timeout — never hang on the loading screen longer than 12s
     const safetyTimer = setTimeout(() => setInitializing(false), 12000);
     if (token && !currentUser) {
       authApi.me()
         .then(data => {
           setCurrentUser(data.user);
-          localStorage.setItem('kodo_user', JSON.stringify(data.user));
+          sessionStorage.setItem('kodo_user', JSON.stringify(data.user));
         })
         .catch(() => {
-          localStorage.removeItem('kodo_token');
-          localStorage.removeItem('kodo_user');
+          sessionStorage.removeItem('kodo_token');
+          sessionStorage.removeItem('kodo_user');
           setCurrentUser(null);
         })
         .finally(() => { clearTimeout(safetyTimer); setInitializing(false); });
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const deviceToken = localStorage.getItem(DEVICE_TOKEN_KEY);
+      const deviceToken = sessionStorage.getItem(DEVICE_TOKEN_KEY);
       const data = await authApi.login(email, password, deviceToken);
 
       if (data.verification_required) {
@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
 
       // Trusted device — login completed directly
       setCurrentUser(data.user);
-      localStorage.setItem('kodo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('kodo_user', JSON.stringify(data.user));
       return { success: true, user: data.user };
     } catch (err) {
       return { success: false, error: err.message };
@@ -100,11 +100,11 @@ export function AuthProvider({ children }) {
 
       // Save device token if remember was requested
       if (data.device_token) {
-        localStorage.setItem(DEVICE_TOKEN_KEY, data.device_token);
+        sessionStorage.setItem(DEVICE_TOKEN_KEY, data.device_token);
       }
 
       setCurrentUser(data.user);
-      localStorage.setItem('kodo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('kodo_user', JSON.stringify(data.user));
       setVerificationPending(null);
       return { success: true, user: data.user };
     } catch (err) {
@@ -131,7 +131,7 @@ export function AuthProvider({ children }) {
         phone_number: phoneNumber || '',
       });
       setCurrentUser(data.user);
-      localStorage.setItem('kodo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('kodo_user', JSON.stringify(data.user));
       return { success: true, user: data.user };
     } catch (err) {
       return { success: false, error: err.message };
@@ -146,8 +146,8 @@ export function AuthProvider({ children }) {
       await authApi.logout();
     } catch { /* ignore */ } finally {
       setCurrentUser(null);
-      localStorage.removeItem('kodo_user');
-      localStorage.removeItem('kodo_token');
+      sessionStorage.removeItem('kodo_user');
+      sessionStorage.removeItem('kodo_token');
       setLoading(false);
     }
   }, []);
@@ -156,7 +156,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await authApi.me();
       setCurrentUser(data.user);
-      localStorage.setItem('kodo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('kodo_user', JSON.stringify(data.user));
     } catch { /* ignore */ }
   }, []);
 

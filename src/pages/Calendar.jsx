@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Search,
-  Video, MapPin, X, Clock, Users, Loader2, Pencil, Trash2
+  Video, MapPin, Loader2
 } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
+import EventDetailPopup from '@/components/calendar/EventDetailPopup';
+import NewEventModal from '@/components/calendar/NewEventModal';
 import { useProject } from '@/context/ProjectContext';
 import { calendarEvents as calendarApi, users as usersApi, participants as participantsApi } from '@/services/api';
 import { useToast } from '@/components/Toast';
@@ -12,7 +14,6 @@ import { useTheme } from '@/context/ThemeContext';
 
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 const TOTAL_SPAN = HOURS.length;
-const EVENT_COLORS = ['#6366f1','#ec4899','#14b8a6','#f59e0b','#ef4444','#22c55e','#818cf8','#a855f7'];
 const TODAY = new Date();
 
 function getMonday(d) {
@@ -61,8 +62,9 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/* EventCard */
-function EventCard({ event, pos, onSelect, getUserById }) {
+/* EventCard — memoized: re-renders only when event/pos identity changes */
+const EventCard = memo(function EventCard({ event, pos, onSelect, getUserById }) {
+  const { t } = useTheme();
   const s = new Date(event.start_time);
   const e = new Date(event.end_time);
   const startStr = s.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
@@ -105,7 +107,7 @@ function EventCard({ event, pos, onSelect, getUserById }) {
                 <MapPin size={9} className="flex-shrink-0" style={{ color: event.color }} />
               )}
               <span className="text-[9px] text-kodo-text-dim truncate">
-                {event.is_online_meeting ? 'Online' : event.location}
+                {event.is_online_meeting ? t.calendarPage.online : event.location}
               </span>
             </div>
           )}
@@ -118,322 +120,8 @@ function EventCard({ event, pos, onSelect, getUserById }) {
       )}
     </div>
   );
-}
+});
 
-/* EventDetailPopup */
-function EventDetailPopup({ event, onClose, onEdit, onDelete, getUserById, currentUserId }) {
-  const { t } = useTheme();
-  const cal = t.calendarPage;
-  const isOrganizer = event.organizer_id === currentUserId;
-  const ref = useRef(null);
-  const s = new Date(event.start_time);
-  const e = new Date(event.end_time);
-  const organizer = getUserById(event.organizer_id);
-  const attendees = (event.attendees || []).map(id => getUserById(id)).filter(Boolean);
-  const dateStr = `${s.getFullYear()}. ${cal.monthNames[s.getMonth()]} ${s.getDate()}.`;
-  const dayName = cal.dayNames[(s.getDay() + 6) % 7];
-  const timeStr = `${s.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })} – ${e.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })}`;
-
-  useEffect(() => {
-    const handler = (ev) => { if (ref.current && !ref.current.contains(ev.target)) onClose(); };
-    const escHandler = (ev) => { if (ev.key === 'Escape') onClose(); };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('keydown', escHandler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler); };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div ref={ref} className="bg-[#1c1c26] border border-white/[0.1] rounded-xl w-full max-w-[380px] animate-fade-in-up shadow-2xl">
-        <div className="h-1.5 rounded-t-xl" style={{ backgroundColor: event.color }} />
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <h3 className="text-[17px] font-bold text-white leading-snug">{event.title}</h3>
-            <button onClick={onClose} className="text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none p-0 flex-shrink-0 mt-0.5">
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="space-y-2.5 mb-4">
-            <div className="flex items-center gap-2.5">
-              <Clock size={14} className="flex-shrink-0" style={{ color: event.color }} />
-              <span className="text-[13px] text-kodo-text-secondary">{dateStr} {dayName}, {timeStr}</span>
-            </div>
-            {(event.is_online_meeting || event.location) && (
-              <div className="flex items-center gap-2.5">
-                {event.is_online_meeting ? (
-                  <Video size={14} className="flex-shrink-0" style={{ color: event.color }} />
-                ) : (
-                  <MapPin size={14} className="flex-shrink-0" style={{ color: event.color }} />
-                )}
-                <span className="text-[13px] text-kodo-text-secondary">
-                  {event.is_online_meeting ? (event.meeting_url || 'Online meeting') : event.location}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {event.description && (
-            <p className="text-[12px] text-kodo-text-muted leading-relaxed mb-4 border-t border-white/[0.06] pt-3">
-              {event.description}
-            </p>
-          )}
-
-          {organizer && (
-            <div className="mb-3">
-              <div className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider mb-2">{cal.organizer}</div>
-              <div className="flex items-center gap-2">
-                <Avatar user={organizer} size={22} showStatus />
-                <span className="text-[12px] text-kodo-text">{organizer.display_name}</span>
-              </div>
-            </div>
-          )}
-
-          {attendees.length > 0 && (
-            <div>
-              <div className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider mb-2">
-                <span className="inline-flex items-center gap-1"><Users size={10} /> {cal.attendees} ({attendees.length})</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {attendees.map(u => (
-                  <div key={u.id} className="flex items-center gap-1.5 px-2 py-1 bg-white/[0.04] rounded-lg">
-                    <Avatar user={u} size={18} />
-                    <span className="text-[11px] text-kodo-text-secondary">{u.display_name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {isOrganizer && (
-            <div className="flex gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-              <button
-                onClick={() => { onEdit(event); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/20 transition-colors"
-              >
-                <Pencil size={13} />
-                {cal.editEvent}
-              </button>
-              <button
-                onClick={() => onDelete(event.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
-              >
-                <Trash2 size={13} />
-                {cal.deleteEvent}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* NewEventModal */
-function NewEventModal({ isOpen, onClose, onCreate, onUpdate, editEvent, activeProject, defaultDate, members }) {
-  const { currentUser } = useAuth();
-  const { t } = useTheme();
-  const cal = t.calendarPage.newEventModal;
-  const dateStr = defaultDate ? toDateStr(defaultDate) : toDateStr(new Date());
-  const blankForm = {
-    title: '', description: '', date: dateStr, startTime: '09:00', endTime: '10:00',
-    location: '', isOnline: true, meetingUrl: '', color: EVENT_COLORS[0], attendees: [], type: 'meetings',
-  };
-  const [form, setForm] = useState(blankForm);
-  const [errors, setErrors] = useState({});
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (isOpen && editEvent) {
-      const s = new Date(editEvent.start_time);
-      const e = new Date(editEvent.end_time);
-      setForm({
-        title: editEvent.title || '',
-        description: editEvent.description || '',
-        date: toDateStr(s),
-        startTime: `${String(s.getHours()).padStart(2,'0')}:${String(s.getMinutes()).padStart(2,'0')}`,
-        endTime: `${String(e.getHours()).padStart(2,'0')}:${String(e.getMinutes()).padStart(2,'0')}`,
-        location: editEvent.location || '',
-        isOnline: !!editEvent.is_online_meeting,
-        meetingUrl: editEvent.meeting_url || '',
-        color: editEvent.color || EVENT_COLORS[0],
-        attendees: editEvent.attendees || [],
-        type: editEvent.type || 'meetings',
-      });
-    } else if (isOpen) {
-      setForm(f => ({ ...f, date: dateStr }));
-    }
-  }, [isOpen, editEvent, dateStr]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const esc = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('mousedown', h);
-    document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', esc); };
-  }, [isOpen, onClose]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    const errs = {};
-    if (!form.title.trim()) errs.title = cal.required;
-    if (!form.date) errs.date = cal.required;
-    if (form.startTime && form.endTime && form.endTime <= form.startTime) errs.endTime = cal.endBeforeStart;
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
-
-    const payload = {
-      team_id: null,
-      title: form.title,
-      description: form.description,
-      location: form.isOnline ? '' : form.location,
-      is_online_meeting: form.isOnline,
-      meeting_url: form.isOnline ? form.meetingUrl : '',
-      start_time: `${form.date}T${form.startTime}:00`,
-      end_time: `${form.date}T${form.endTime}:00`,
-      is_all_day: false,
-      status: 'confirmed',
-      reminder_minutes: 15,
-      color: form.color,
-      attendees: form.attendees.length ? form.attendees : [currentUser.id],
-    };
-
-    if (editEvent) {
-      await onUpdate(editEvent.id, payload);
-    } else {
-      await onCreate(payload);
-    }
-    setForm(blankForm);
-    onClose();
-  };
-
-  const toggle = (id) => setForm(p => ({
-    ...p, attendees: p.attendees.includes(id) ? p.attendees.filter(a => a !== id) : [...p.attendees, id],
-  }));
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div ref={ref} className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto animate-fade-in-up">
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
-          <h2 className="text-[18px] font-semibold text-white">{editEvent ? cal.editTitle : cal.title}</h2>
-          <button onClick={onClose} className="text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none p-0">
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={submit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.eventName}</label>
-            <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-              className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 ${errors.title ? 'border-red-500/50' : 'border-white/[0.08]'}`}
-              placeholder={cal.eventNamePlaceholder} />
-            {errors.title && <p className="text-[11px] text-red-400 mt-1">{errors.title}</p>}
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.description}</label>
-            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 resize-none"
-              rows={2} placeholder={cal.descriptionPlaceholder} />
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.type}</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[{ key: 'meetings', label: cal.meeting }, { key: 'events', label: cal.event }, { key: 'reminders', label: cal.reminder }].map(tp => (
-                <button key={tp.key} type="button" onClick={() => setForm(p => ({ ...p, type: tp.key }))}
-                  className={`px-3 py-2 rounded-lg border text-[12px] font-medium transition-all cursor-pointer ${
-                    form.type === tp.key ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400' : 'border-white/[0.08] bg-white/[0.04] text-kodo-text-secondary hover:bg-white/[0.06]'
-                  }`}>{tp.label}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.date}</label>
-              <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 [color-scheme:dark] ${errors.date ? 'border-red-500/50' : 'border-white/[0.08]'}`} />
-            </div>
-            <div>
-              <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.startTime}</label>
-              <input type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 [color-scheme:dark]" />
-            </div>
-            <div>
-              <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.endTime}</label>
-              <input type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))}
-                className={`w-full px-3 py-2 bg-white/[0.04] border rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 [color-scheme:dark] ${errors.endTime ? 'border-red-500/50' : 'border-white/[0.08]'}`} />
-              {errors.endTime && <p className="text-[11px] text-red-400 mt-1">{errors.endTime}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer mb-2">
-              <input type="checkbox" checked={form.isOnline} onChange={e => setForm(p => ({ ...p, isOnline: e.target.checked }))}
-                className="w-4 h-4 text-indigo-500 bg-white/[0.04] border-white/[0.2] rounded" />
-              <span className="text-[13px] text-kodo-text">{cal.onlineMeeting}</span>
-            </label>
-            {form.isOnline ? (
-              <input type="text" value={form.meetingUrl} onChange={e => setForm(p => ({ ...p, meetingUrl: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
-                placeholder={cal.meetingLinkPlaceholder} />
-            ) : (
-              <input type="text" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
-                placeholder={cal.locationPlaceholder} />
-            )}
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.color}</label>
-            <div className="flex gap-2">
-              {EVENT_COLORS.map(c => (
-                <button key={c} type="button" onClick={() => setForm(p => ({ ...p, color: c }))}
-                  className={`w-7 h-7 rounded-full border-2 cursor-pointer transition-all ${
-                    form.color === c ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'
-                  }`} style={{ backgroundColor: c }} />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.attendees}</label>
-            <div className="max-h-32 overflow-y-auto border border-white/[0.08] rounded-lg p-1.5 space-y-0.5">
-              {members.map(user => (
-                <div key={user.id} onClick={() => toggle(user.id)}
-                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${
-                    form.attendees.includes(user.id) ? 'bg-indigo-500/10 border border-indigo-500/20' : 'hover:bg-white/[0.04] border border-transparent'
-                  }`}>
-                  <input type="checkbox" checked={form.attendees.includes(user.id)} onChange={() => {}} className="w-4 h-4 text-indigo-500 bg-white/[0.04] border-white/[0.2] rounded" />
-                  <Avatar user={user} size={24} showStatus />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-medium text-kodo-text truncate">{user.display_name}</div>
-                    <div className="text-[10px] text-kodo-text-dim truncate">{user.job_title}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={() => { setForm(blankForm); onClose(); }}
-              className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-kodo-text rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer text-[13px] font-medium">
-              {cal.cancel}
-            </button>
-            <button type="submit"
-              className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer text-[13px] font-medium flex items-center justify-center gap-1.5">
-              {!editEvent && <Plus size={14} />} {editEvent ? cal.save : cal.create}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 /* CalendarPage */
 export default function CalendarPage() {
@@ -482,7 +170,9 @@ export default function CalendarPage() {
     });
   }, [activeProject]);
 
-  const getUserById = (id) => allUsers.find(u => u.id === id) || null;
+  // Memoize as a Map for O(1) lookup instead of O(n) find on every EventCard render
+  const userMap = useMemo(() => new Map(allUsers.map(u => [u.id, u])), [allUsers]);
+  const getUserById = useCallback((id) => userMap.get(id) || null, [userMap]);
 
   const filtered = useMemo(() => {
     return events.filter(e => {
@@ -554,6 +244,20 @@ export default function CalendarPage() {
       toast.success(cal.eventDeleted);
     } catch (err) {
       toast.error(err.message || 'Failed to delete event');
+    }
+  };
+
+  const handleRsvp = async (eventId, responseStatus) => {
+    try {
+      const res = await calendarApi.rsvp(eventId, responseStatus);
+      const updated = res.calendar_event || res.data;
+      if (updated) {
+        setEvents(prev => prev.map(e => e.id === eventId ? { ...e, ...updated } : e));
+        setSelectedEvent(prev => prev && prev.id === eventId ? { ...prev, ...updated } : prev);
+      }
+      toast.success(cal.rsvpUpdated);
+    } catch (err) {
+      toast.error(err.message || 'Failed to RSVP');
     }
   };
 
@@ -758,6 +462,7 @@ export default function CalendarPage() {
           onClose={() => setSelectedEvent(null)}
           onEdit={handleEditStart}
           onDelete={handleDelete}
+          onRsvp={handleRsvp}
           getUserById={getUserById}
           currentUserId={currentUser?.id}
         />

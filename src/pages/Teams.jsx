@@ -1,13 +1,189 @@
 import { useState, useEffect } from 'react';
-import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil } from 'lucide-react';
+import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil, Hash, Megaphone, X } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
-import { teams as teamsApi, users as usersApi, participants as participantsApi } from '@/services/api';
+import { teams as teamsApi, users as usersApi, participants as participantsApi, channels as channelsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import NewTeamModal from '@/components/NewTeamModal';
 import TeamMemberPopup from '@/components/TeamMemberPopup';
 import { useTheme } from '@/context/ThemeContext';
+
+function TeamChannelsSection({ team, isOwner, onStartChat }) {
+  const toast = useToast();
+  const { t } = useTheme();
+  const tp = t.teamsPage;
+
+  const [channels, setChannels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ name: '', description: '', channel_type: 'standard' });
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    channelsApi.list(team.id)
+      .then(res => { if (!cancelled) setChannels(res.channels || []); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [team.id]);
+
+  const handleCreate = async () => {
+    if (!form.name.trim()) return;
+    setCreating(true);
+    try {
+      const res = await channelsApi.create({
+        team_id: team.id,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        channel_type: form.channel_type,
+      });
+      setChannels(prev => [...prev, res.channel]);
+      setForm({ name: '', description: '', channel_type: 'standard' });
+      setShowCreate(false);
+      toast.success(tp.channelCreated);
+    } catch (err) {
+      toast.error(err.message || 'Failed to create channel');
+    }
+    setCreating(false);
+  };
+
+  const handleDelete = async (channelId) => {
+    if (!confirm(tp.confirmDeleteChannel)) return;
+    try {
+      await channelsApi.destroy(channelId);
+      setChannels(prev => prev.filter(c => c.id !== channelId));
+      toast.success(tp.channelDeleted);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete channel');
+    }
+  };
+
+  const iconFor = (type) => {
+    if (type === 'announcement') return <Megaphone size={13} className="text-orange-400" />;
+    if (type === 'private') return <Lock size={13} className="text-kodo-text-dim" />;
+    return <Hash size={13} className="text-kodo-text-dim" />;
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-white/[0.06]" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[11px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em]">
+          {tp.channels}
+        </div>
+        {isOwner && !showCreate && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-400 bg-kodo-accent/10 hover:bg-kodo-accent/20 px-2.5 py-1 rounded-md cursor-pointer border-none transition-colors"
+          >
+            <Plus size={12} />
+            {tp.newChannel}
+          </button>
+        )}
+      </div>
+
+      {showCreate && (
+        <div className="mb-3 bg-white/[0.04] rounded-lg border border-white/[0.08] p-3 animate-fade-in-up">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] text-kodo-text-dim">{tp.newChannel}</span>
+            <button
+              onClick={() => { setShowCreate(false); setForm({ name: '', description: '', channel_type: 'standard' }); }}
+              className="text-kodo-text-dim hover:text-kodo-text p-0.5 cursor-pointer bg-transparent border-none"
+              aria-label="Close"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <input
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            placeholder={tp.channelName}
+            className="w-full px-2 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-[12px] text-white mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          />
+          <input
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder={tp.channelDescription}
+            className="w-full px-2 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-[12px] text-kodo-text-muted mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          />
+          <div className="flex gap-1 mb-2">
+            {[
+              { key: 'standard', label: tp.channelTypeStandard },
+              { key: 'private', label: tp.channelTypePrivate },
+              { key: 'announcement', label: tp.channelTypeAnnouncement },
+            ].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setForm(f => ({ ...f, channel_type: opt.key }))}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-all border ${
+                  form.channel_type === opt.key
+                    ? 'bg-kodo-accent/10 border-kodo-accent/30 text-indigo-400'
+                    : 'bg-transparent border-white/[0.08] text-kodo-text-dim hover:text-kodo-text-secondary'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleCreate}
+            disabled={creating || !form.name.trim()}
+            className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-[11px] font-medium cursor-pointer border-none hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {creating && <Loader2 size={12} className="animate-spin" />}
+            {tp.create}
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-[12px] text-kodo-text-dim py-2">
+          <Loader2 size={13} className="inline animate-spin mr-1" />
+        </div>
+      ) : channels.length === 0 ? (
+        <div className="text-[12px] text-kodo-text-dim py-2">{tp.noChannels}</div>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          {channels.map(ch => (
+            <div
+              key={ch.id}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/[0.04] transition-colors group"
+            >
+              {iconFor(ch.channel_type)}
+              <div className="flex-1 min-w-0">
+                <div className="text-[12.5px] font-medium text-kodo-text truncate">
+                  {ch.name}
+                  {ch.is_default && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-kodo-accent/15 text-indigo-400">
+                      default
+                    </span>
+                  )}
+                </div>
+                {ch.description && (
+                  <div className="text-[10.5px] text-kodo-text-muted truncate">{ch.description}</div>
+                )}
+              </div>
+              {typeof ch.messages_count === 'number' && (
+                <span className="text-[10px] text-kodo-text-dim">{ch.messages_count}</span>
+              )}
+              {isOwner && !ch.is_default && (
+                <button
+                  onClick={() => handleDelete(ch.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-kodo-text-dim hover:text-red-400 cursor-pointer bg-transparent border-none transition-all"
+                  aria-label="Delete channel"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TeamsPage({ onNavigate }) {
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -311,6 +487,12 @@ export default function TeamsPage({ onNavigate }) {
                       </div>
                     ))}
                   </div>
+
+                  <TeamChannelsSection
+                    team={team}
+                    isOwner={team.owner_id === currentUser?.id}
+                    onStartChat={() => handleTeamMessage(team)}
+                  />
 
                   <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-col gap-2">
                     <button
