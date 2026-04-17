@@ -136,7 +136,7 @@ export default function Dashboard({ onNavigate }) {
   const { tasks: allTasks } = useTasks();
   const { t, language } = useTheme();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
-  const projectId = activeProject?.id || 1;
+  const projectId = activeProject?.id;
 
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [timeEntriesData, setTimeEntriesData] = useState([]);
@@ -146,7 +146,10 @@ export default function Dashboard({ onNavigate }) {
   const [selectedMemberId, setSelectedMemberId] = useState(null);
 
   useEffect(() => {
-    if (!activeProject) return;
+    if (!activeProject || !projectId) {
+      setDashLoading(false);
+      return;
+    }
     setDashLoading(true);
     Promise.all([
       participantsApi.list('project', projectId).catch(() => ({ data: [] })),
