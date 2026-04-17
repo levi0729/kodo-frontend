@@ -155,7 +155,8 @@ The database schema defines these tables, but there are no API endpoints or UI f
 32. [x] **Password reset flow (`password_reset_tokens`)** — the table exists but there's no forgot-password endpoint or UI.
     - **Impact:** Essential for any real auth system
 
-33. [ ] **Team channels (`channels`)** — the schema supports different channel types (general, public, private, announcement) but the chat system doesn't use them.
+33. [x] **Team channels (`channels`)** — the schema supports different channel types (general, public, private, announcement) but the chat system doesn't use them.
+    - **Done:** Channels integrated into Messages UI. ChannelSidebar shows channels under active team with type-specific icons (Hash/Lock/Megaphone). Clicking a channel loads its messages via `channelsApi.messages()`. Channel messages can be sent via `channelsApi.sendMessage()`. MessagesContext extended with `openChannel()`, `sendChannelMessage()`, `activeChannelId`. Falls back to team room when no channel is selected.
 
 34. [x] **Message reactions (`message_reactions`)** — the frontend has a reaction UI but it's purely local. The backend table exists but has no API.
 

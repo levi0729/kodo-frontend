@@ -6,7 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 const QUICK_EMOJIS = ['❤️', '👍', '👎'];
 
-export default function MessageThread({ messages, messagesLoading, activeDmUserId, dmUser, activeTeam, getUserById, toggleReaction }) {
+export default function MessageThread({ messages, messagesLoading, activeDmUserId, dmUser, activeTeam, activeChannel, getUserById, toggleReaction }) {
   const { currentUser } = useAuth();
   const { t } = useTheme();
   const messagesEndRef = useRef(null);
@@ -47,7 +47,7 @@ export default function MessageThread({ messages, messagesLoading, activeDmUserI
     return bytes + ' B';
   };
 
-  const displayMessages = (activeDmUserId || activeTeam) ? messages : [];
+  const displayMessages = (activeDmUserId || activeTeam || activeChannel) ? messages : [];
 
   if (messagesLoading) {
     return (
@@ -68,10 +68,10 @@ export default function MessageThread({ messages, messagesLoading, activeDmUserI
           )}
         </div>
         <div className="text-[15px] font-semibold text-white mb-1">
-          {activeDmUserId ? dmUser?.display_name : activeTeam?.name}
+          {activeDmUserId ? dmUser?.display_name : activeChannel ? `#${activeChannel.name}` : activeTeam?.name}
         </div>
         <div className="text-[13px] text-kodo-text-muted mb-1">
-          {activeDmUserId ? dmUser?.job_title : activeTeam?.description}
+          {activeDmUserId ? dmUser?.job_title : activeChannel?.description || activeTeam?.description}
         </div>
         <div className="text-[12px] text-kodo-text-dim">
           {t.messagesPage.startChatting}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Hash, ChevronLeft, Loader2 } from 'lucide-react';
+import { Hash, ChevronLeft, Loader2, Lock, Megaphone } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import ChannelSidebar from '@/components/messages/ChannelSidebar';
 import MessageThread from '@/components/messages/MessageThread';
@@ -9,12 +9,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppData } from '@/context/AppDataContext';
+import { channels as channelsApi } from '@/services/api';
 
 export default function MessagesPage({ dmUserId, teamId }) {
   const { currentUser } = useAuth();
   const {
     messages, messagesLoading,
-    openDM, openTeamRoom, sendMessage, sendTeamMessage,
+    openDM, openTeamRoom, openChannel, activeChannelId,
+    sendMessage, sendTeamMessage, sendChannelMessage,
     toggleReaction: toggleReactionApi, addNotification
   } = useMessages();
   const { t } = useTheme();
@@ -31,6 +33,19 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const [dmSearch, setDmSearch] = useState('');
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [showFindFriends, setShowFindFriends] = useState(false);
+  const [teamChannels, setTeamChannels] = useState([]);
+
+  // Fetch channels when active team changes
+  useEffect(() => {
+    if (!activeTeamId) { setTeamChannels([]); return; }
+    let cancelled = false;
+    channelsApi.list(activeTeamId).then(data => {
+      if (!cancelled) setTeamChannels(data.channels || []);
+    }).catch(() => {
+      if (!cancelled) setTeamChannels([]);
+    });
+    return () => { cancelled = true; };
+  }, [activeTeamId]);
 
   // Set initial team once data is loaded
   useEffect(() => {
@@ -49,16 +64,15 @@ export default function MessagesPage({ dmUserId, teamId }) {
     }
   }, [dmUserId]);
 
-  // Local helper to find user by id
   const getUserById = useCallback((id) => {
     if (id === currentUser?.id) return currentUser;
     return allUsers.find(u => u.id === id) || null;
   }, [allUsers, currentUser]);
 
   const activeTeam = userTeams.find(tm => tm.id === activeTeamId);
+  const activeChannel = teamChannels.find(ch => ch.id === activeChannelId);
 
   // DM list shows only accepted friends
-  const friendIds = new Set(friendsList.map(f => f.id));
   const friendMembers = friendsList.filter(u => u.id !== currentUser?.id);
   const filteredMembers = dmSearch
     ? friendMembers.filter(u =>
@@ -80,6 +94,12 @@ export default function MessagesPage({ dmUserId, teamId }) {
     openTeamRoom(tId);
   }, [openTeamRoom]);
 
+  const handleSelectChannel = useCallback((channelId) => {
+    setActiveDmUserId(null);
+    setMobileShowChat(true);
+    openChannel(channelId);
+  }, [openChannel]);
+
   const handleSelectDm = useCallback((userId) => {
     setActiveDmUserId(userId);
     setActiveTeamId(null);
@@ -91,6 +111,8 @@ export default function MessagesPage({ dmUserId, teamId }) {
     try {
       if (activeDmUserId) {
         await sendMessage(activeDmUserId, msgText, fileList);
+      } else if (activeChannelId) {
+        await sendChannelMessage(activeChannelId, msgText);
       } else if (activeTeamId) {
         await sendTeamMessage(activeTeamId, msgText, fileList);
       }
@@ -110,7 +132,16 @@ export default function MessagesPage({ dmUserId, teamId }) {
         body: msgText.length > 60 ? msgText.slice(0, 60) + '...' : msgText,
       });
     }
-  }, [activeDmUserId, activeTeamId, sendMessage, sendTeamMessage, allUsers, currentUser, addNotification, t]);
+  }, [activeDmUserId, activeChannelId, activeTeamId, sendMessage, sendChannelMessage, sendTeamMessage, allUsers, currentUser, addNotification, t]);
+
+  // Determine header info
+  const renderChannelIcon = (type, size = 17) => {
+    if (type === 'announcement') return <Megaphone size={size} className="text-amber-400" />;
+    if (type === 'private') return <Lock size={size} className="text-kodo-text-muted" />;
+    return <Hash size={size} className="text-kodo-text-muted" />;
+  };
+
+  const canSend = !!(activeDmUserId || activeTeamId || activeChannelId);
 
   if (dataLoading) {
     return (
@@ -134,6 +165,9 @@ export default function MessagesPage({ dmUserId, teamId }) {
         onSelectDm={handleSelectDm}
         onFindFriends={() => setShowFindFriends(true)}
         mobileShowChat={mobileShowChat}
+        teamChannels={teamChannels}
+        activeChannelId={activeChannelId}
+        onSelectChannel={handleSelectChannel}
       />
       <div className={`${!mobileShowChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0`}>
         <div className="h-[52px] flex items-center gap-2.5 px-3 md:px-6 border-b border-white/[0.06] flex-shrink-0">
@@ -150,6 +184,16 @@ export default function MessagesPage({ dmUserId, teamId }) {
               <span className="text-[12px] text-kodo-text-dim ml-1 hidden sm:inline truncate">
                 · {dmUser.job_title}
               </span>
+            </>
+          ) : activeChannel ? (
+            <>
+              {renderChannelIcon(activeChannel.channel_type)}
+              <span className="text-[14px] sm:text-[15px] font-semibold text-white truncate">{activeChannel.name}</span>
+              {activeChannel.description && (
+                <span className="text-[12px] text-kodo-text-dim ml-1 hidden sm:inline truncate">
+                  · {activeChannel.description}
+                </span>
+              )}
             </>
           ) : activeTeam ? (
             <>
@@ -176,6 +220,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
             activeDmUserId={activeDmUserId}
             dmUser={dmUser}
             activeTeam={activeTeam}
+            activeChannel={activeChannel}
             getUserById={getUserById}
             toggleReaction={toggleReaction}
           />
@@ -184,6 +229,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
           activeDmUserId={activeDmUserId}
           dmUser={dmUser}
           activeTeam={activeTeam}
+          activeChannel={activeChannel}
           allUsers={allUsers}
           currentUser={currentUser}
           onSend={handleSend}
@@ -192,7 +238,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
 
       {showFindFriends && (
         <FindFriendsModal
-          friendIds={friendIds}
+          friendIds={new Set(friendsList.map(f => f.id))}
           pendingRequests={pendingRequests}
           setPendingRequests={setPendingRequests}
           setFriendsList={setFriendsList}

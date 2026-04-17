@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { chat as chatApi, files as filesApi } from '@/services/api';
+import { chat as chatApi, files as filesApi, channels as channelsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
@@ -19,6 +19,7 @@ export function MessagesProvider({ children }) {
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [activeChannelId, setActiveChannelId] = useState(null);
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
@@ -79,9 +80,51 @@ export function MessagesProvider({ children }) {
   }, [currentUser, openRoom]);
 
   const openTeamRoom = useCallback((teamId) => {
+    setActiveChannelId(null);
     openRoom(teamId); // Team room_id = team_id
     return teamId;
   }, [openRoom]);
+
+  const openChannel = useCallback(async (channelId) => {
+    setActiveChannelId(channelId);
+    setActiveRoomId(null);
+    setMessages([]);
+    setMessagesLoading(true);
+    // Stop room polling
+    if (pollRef.current) clearInterval(pollRef.current);
+    try {
+      const data = await channelsApi.messages(channelId, { per_page: 50 });
+      const msgs = data.messages?.data || data.messages || [];
+      // API returns newest first, reverse for chronological display
+      setMessages(Array.isArray(msgs) ? [...msgs].reverse() : []);
+    } catch (err) {
+      toast.error(t.chatErrors.loadFailed);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [toast, t]);
+
+  const sendChannelMessage = useCallback(async (channelId, content) => {
+    try {
+      const data = await channelsApi.sendMessage(channelId, { content, content_type: 'text' });
+      const msg = data.message;
+      if (msg) {
+        // Normalize to same shape as chat messages
+        const normalized = {
+          ...msg,
+          message: msg.content,
+          content: msg.content,
+          reactions: msg.reactions || [],
+          attachments: msg.attachments || [],
+        };
+        setMessages(prev => [...prev, normalized]);
+      }
+      return msg;
+    } catch (err) {
+      toast.error(t.chatErrors.sendFailed + ': ' + err.message);
+      throw err;
+    }
+  }, [toast, t]);
 
   // ── Polling for new messages (pauses when tab is hidden) ─
 
@@ -229,8 +272,11 @@ export function MessagesProvider({ children }) {
       openRoom,
       openDM,
       openTeamRoom,
+      openChannel,
+      activeChannelId,
       sendMessage,
       sendTeamMessage,
+      sendChannelMessage,
       markAsRead,
       toggleReaction,
       notifications,

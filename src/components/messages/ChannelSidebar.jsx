@@ -1,12 +1,19 @@
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Hash, Lock, Megaphone } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useTheme } from '@/context/ThemeContext';
+
+function ChannelIcon({ type, size = 13 }) {
+  if (type === 'announcement') return <Megaphone size={size} className="text-amber-400 flex-shrink-0" />;
+  if (type === 'private') return <Lock size={size} className="text-kodo-text-dim flex-shrink-0" />;
+  return <Hash size={size} className="text-kodo-text-dim flex-shrink-0" />;
+}
 
 export default function ChannelSidebar({
   userTeams, activeTeamId, activeDmUserId,
   filteredMembers, dmSearch, setDmSearch,
   pendingRequests, onSelectTeam, onSelectDm, onFindFriends,
   mobileShowChat,
+  teamChannels, activeChannelId, onSelectChannel,
 }) {
   const { t } = useTheme();
 
@@ -16,21 +23,43 @@ export default function ChannelSidebar({
         <div className="kodo-section-title">{t.messagesPage.teams}</div>
         <div className="flex flex-col gap-0.5">
           {userTeams.map(tm => (
-            <button
-              key={tm.id}
-              onClick={() => onSelectTeam(tm.id)}
-              className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition-all border-none text-left ${
-                activeTeamId === tm.id && !activeDmUserId
-                  ? 'bg-kodo-accent/10 text-indigo-400'
-                  : 'bg-transparent text-kodo-text-muted hover:bg-white/[0.04] hover:text-kodo-text-secondary'
-              }`}
-            >
-              <div
-                className="w-2 h-2 rounded-sm flex-shrink-0"
-                style={{ backgroundColor: tm.color }}
-              />
-              {tm.name}
-            </button>
+            <div key={tm.id}>
+              <button
+                onClick={() => onSelectTeam(tm.id)}
+                className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition-all border-none text-left ${
+                  activeTeamId === tm.id && !activeDmUserId && !activeChannelId
+                    ? 'bg-kodo-accent/10 text-indigo-400'
+                    : activeTeamId === tm.id && !activeDmUserId
+                      ? 'bg-white/[0.03] text-kodo-text-secondary'
+                      : 'bg-transparent text-kodo-text-muted hover:bg-white/[0.04] hover:text-kodo-text-secondary'
+                }`}
+              >
+                <div
+                  className="w-2 h-2 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: tm.color }}
+                />
+                {tm.name}
+              </button>
+              {/* Show channels when this team is active */}
+              {activeTeamId === tm.id && !activeDmUserId && teamChannels.length > 0 && (
+                <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-white/[0.06] pl-2">
+                  {teamChannels.map(ch => (
+                    <button
+                      key={ch.id}
+                      onClick={() => onSelectChannel(ch.id)}
+                      className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-[12px] font-medium cursor-pointer transition-all border-none text-left ${
+                        activeChannelId === ch.id
+                          ? 'bg-kodo-accent/10 text-indigo-400'
+                          : 'bg-transparent text-kodo-text-dim hover:bg-white/[0.04] hover:text-kodo-text-muted'
+                      }`}
+                    >
+                      <ChannelIcon type={ch.channel_type} size={12} />
+                      <span className="truncate">{ch.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
