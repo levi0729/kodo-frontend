@@ -176,12 +176,12 @@ export default function FriendsPage({ onNavigate }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 w-full sm:w-fit overflow-x-auto">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer border-none transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-[12px] sm:text-[13px] font-medium cursor-pointer border-none transition-all whitespace-nowrap ${
               activeTab === tab
                 ? 'bg-indigo-500/20 text-indigo-400'
                 : 'bg-transparent text-kodo-text-muted hover:text-white hover:bg-white/[0.04]'
@@ -210,27 +210,29 @@ export default function FriendsPage({ onNavigate }) {
               const user = getFriendUser(record);
               if (!user) return null;
               return (
-                <div key={record.id || user.id} className="kodo-card p-4 flex items-center gap-4">
-                  <Avatar user={user} size={40} showStatus />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-semibold text-white truncate">
-                      {user.display_name}
-                    </div>
-                    <div className="text-[12px] text-kodo-text-muted truncate">
-                      {user.job_title || user.email || ''}
+                <div key={record.id || user.id} className="kodo-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar user={user} size={40} showStatus />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-white truncate">
+                        {user.display_name}
+                      </div>
+                      <div className="text-[12px] text-kodo-text-muted truncate">
+                        {user.job_title || user.email || ''}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
                     <button
                       onClick={() => handleMessage(user.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/25 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/25 transition-colors"
                     >
                       <MessageSquare size={14} />
                       {t.friends.message}
                     </button>
                     <button
                       onClick={() => handleRemove(record)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
                     >
                       <UserMinus size={14} />
                       {t.friends.remove}

@@ -272,7 +272,7 @@ export default function TimeTracking() {
                 {entries.map(entry => (
                   <div
                     key={entry.id}
-                    className="grid grid-cols-1 sm:grid-cols-[1fr_100px_120px_40px] gap-1 sm:gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors items-center"
+                    className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_120px_40px] gap-1 sm:gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors items-center"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                       <span className="text-[13px] text-white truncate">
@@ -284,15 +284,20 @@ export default function TimeTracking() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[13px] text-kodo-text-muted font-mono tabular-nums">
-                      {formatDuration(entry.duration_minutes)}
-                    </span>
-                    <span className="text-[12px] text-kodo-text-muted">
-                      {formatDate(entry.started_at || entry.created_at)}
-                    </span>
+                    <div className="flex items-center gap-2 sm:contents">
+                      <span className="text-[13px] text-kodo-text-muted font-mono tabular-nums">
+                        {formatDuration(entry.duration_minutes)}
+                      </span>
+                      <span className="text-[12px] text-kodo-text-muted hidden sm:inline">
+                        {formatDate(entry.started_at || entry.created_at)}
+                      </span>
+                      <span className="text-[11px] text-kodo-text-dim sm:hidden">
+                        · {formatDate(entry.started_at || entry.created_at)}
+                      </span>
+                    </div>
                     <button
                       onClick={() => handleDelete(entry.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors cursor-pointer border-none bg-transparent text-kodo-text-dim hover:text-red-400 justify-self-end sm:justify-self-auto"
+                      className="p-2 sm:p-1.5 rounded-lg hover:bg-red-500/15 transition-colors cursor-pointer border-none bg-transparent text-kodo-text-dim hover:text-red-400 justify-self-end sm:justify-self-auto"
                       title={t.timeTracking.delete}
                     >
                       <Trash2 size={14} />

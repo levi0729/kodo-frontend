@@ -134,7 +134,7 @@ function AppContent() {
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} onSearchOpen={() => setSearchOpen(true)} />
 
-        <div className="flex-1 overflow-y-auto px-3 py-3 md:px-8 md:py-6">
+        <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-4 md:px-8 md:py-6">
           <ErrorBoundary>
             <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /></div>}>
               <Routes>

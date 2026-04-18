@@ -311,7 +311,7 @@ export default function SettingsPage() {
                   aria-label={s.dndStart}
                   value={settingsState.dnd_start_time || ''}
                   onChange={e => updateSetting('dnd_start_time', e.target.value || null)}
-                  className="kodo-input text-[12px] w-[100px]"
+                  className="kodo-input text-[12px] w-[80px] sm:w-[100px]"
                 />
                 <span className="text-kodo-text-dim text-[12px]">–</span>
                 <input
@@ -319,7 +319,7 @@ export default function SettingsPage() {
                   aria-label={s.dndEnd}
                   value={settingsState.dnd_end_time || ''}
                   onChange={e => updateSetting('dnd_end_time', e.target.value || null)}
-                  className="kodo-input text-[12px] w-[100px]"
+                  className="kodo-input text-[12px] w-[80px] sm:w-[100px]"
                 />
               </div>
             </div>

@@ -364,9 +364,9 @@ export default function CalendarPage() {
       </div>
 
       {(viewMode === 'week' || viewMode === 'day') && (
-        <div className="h-[400px] sm:h-[500px] md:h-[700px] kodo-card overflow-hidden flex flex-col">
+        <div className="h-[350px] sm:h-[450px] md:h-[700px] kodo-card overflow-hidden flex flex-col">
           <div className={`overflow-x-auto flex-1 min-h-0 flex flex-col ${viewMode === 'week' ? '[&>*]:min-w-[500px] sm:[&>*]:min-w-[600px]' : ''}`}>
-          <div className={`grid ${viewMode === 'week' ? 'grid-cols-[40px_repeat(5,1fr)] sm:grid-cols-[50px_repeat(5,1fr)]' : 'grid-cols-[40px_1fr] sm:grid-cols-[50px_1fr]'} border-b border-white/[0.06] flex-shrink-0 ${viewMode === 'week' ? 'min-w-[500px] sm:min-w-[600px]' : ''}`}>
+          <div className={`grid ${viewMode === 'week' ? 'grid-cols-[40px_repeat(5,1fr)] sm:grid-cols-[50px_repeat(5,1fr)]' : 'grid-cols-[40px_1fr] sm:grid-cols-[50px_1fr]'} border-b border-white/[0.06] flex-shrink-0 ${viewMode === 'week' ? 'min-w-[420px] sm:min-w-[560px]' : ''}`}>
             <div className="p-2" />
             {(viewMode === 'week' ? weekDays : [currentDate]).map((d, i) => {
               const isToday = sameDay(d, TODAY);
@@ -383,7 +383,7 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <div className={`flex-1 min-h-0 grid ${viewMode === 'week' ? 'grid-cols-[40px_repeat(5,1fr)] sm:grid-cols-[50px_repeat(5,1fr)] min-w-[500px] sm:min-w-[600px]' : 'grid-cols-[40px_1fr] sm:grid-cols-[50px_1fr]'}`}>
+          <div className={`flex-1 min-h-0 grid ${viewMode === 'week' ? 'grid-cols-[40px_repeat(5,1fr)] sm:grid-cols-[50px_repeat(5,1fr)] min-w-[420px] sm:min-w-[560px]' : 'grid-cols-[40px_1fr] sm:grid-cols-[50px_1fr]'}`}>
             <div className="relative">
               {HOURS.map((h, i) => (
                 <div key={h} className="absolute right-2"
@@ -414,7 +414,7 @@ export default function CalendarPage() {
       )}
 
       {viewMode === 'month' && (
-        <div className="h-[400px] sm:h-[500px] md:h-[700px] kodo-card overflow-hidden flex flex-col">
+        <div className="h-[350px] sm:h-[450px] md:h-[700px] kodo-card overflow-hidden flex flex-col">
           <div className="grid grid-cols-7 border-b border-white/[0.06] flex-shrink-0">
             {cal.dayAbbr.map((n, i) => (
               <div key={`${n}-${i}`} className="text-center py-2 text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider">

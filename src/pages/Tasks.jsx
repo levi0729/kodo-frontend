@@ -157,11 +157,11 @@ export default function TasksPage({ highlightTaskId }) {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-3 md:gap-4 flex-1 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-x-visible lg:pb-0">
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 flex-1 sm:overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-x-visible lg:pb-0">
           {COLUMNS.map(col => {
             const colTasks = projectTasks.filter(t => t.status === col.key);
             return (
-              <div key={col.key} className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/[0.04] p-2.5 md:p-3 min-w-[220px] lg:min-w-0">
+              <div key={col.key} className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/[0.04] p-2.5 md:p-3 sm:min-w-[220px] lg:min-w-0">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
                   <span className="text-[11px] font-semibold text-kodo-text-secondary uppercase tracking-[0.06em]">

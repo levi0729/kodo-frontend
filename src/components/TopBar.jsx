@@ -86,7 +86,7 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
         <button
           onClick={onMenuToggle}
           aria-label="Toggle menu"
-          className="p-2 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none lg:hidden flex-shrink-0"
+          className="p-2.5 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none lg:hidden flex-shrink-0"
         >
           <Menu size={20} />
         </button>
@@ -109,14 +109,14 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
         <button
           onClick={onSearchOpen}
           aria-label={t.common.search}
-          className="p-2 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors sm:hidden"
+          className="p-2.5 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors sm:hidden"
         >
           <Search size={18} />
         </button>
         <button
           onClick={() => setNotifOpen(!notifOpen)}
           aria-label={t.topbar.notifications}
-          className="p-2 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors relative"
+          className="p-2.5 rounded-lg bg-transparent border-none cursor-pointer text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors relative"
         >
           <Bell size={18} />
           {unread > 0 && (

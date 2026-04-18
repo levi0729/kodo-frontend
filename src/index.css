@@ -232,7 +232,7 @@ html.light input[type="time"] {
 
 @media (max-width: 639px) {
   .kodo-card { @apply rounded-xl; }
-  button, a, [role="button"] { min-height: 36px; }
+  button, a, [role="button"] { min-height: 40px; }
 }
 
 /* Animations */

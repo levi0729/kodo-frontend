@@ -219,7 +219,7 @@ export default function Dashboard({ onNavigate }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-4 md:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-3 sm:gap-4 md:gap-6">
         <div className="flex flex-col gap-4 md:gap-6">
           <div className="kodo-card p-3.5 md:p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 md:w-40 md:h-40 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full" />
