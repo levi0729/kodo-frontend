@@ -40,7 +40,7 @@ export default function EventDetailPopup({ event, onClose, onEdit, onDelete, onR
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div ref={ref} className="bg-[#1c1c26] border border-white/[0.1] rounded-xl w-full max-w-[380px] max-h-[85vh] overflow-y-auto animate-fade-in-up shadow-2xl mx-2 sm:mx-0">
         <div className="h-1.5 rounded-t-xl" style={{ backgroundColor: event.color }} />
         <div className="p-5">

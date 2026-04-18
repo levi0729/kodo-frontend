@@ -124,7 +124,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div
         ref={modalRef}
         className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[580px] max-h-[90vh] overflow-y-auto animate-fade-in-up mx-2 sm:mx-0"

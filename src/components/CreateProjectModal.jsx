@@ -32,7 +32,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 animate-fade-in-up"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
