@@ -256,8 +256,11 @@ export default function TimeTracking() {
             </div>
 
             {entries.length === 0 ? (
-              <div className="text-center py-10 text-kodo-text-muted text-[13px]">
-                {t.timeTracking.noEntries}
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-12 h-12 rounded-xl bg-white/[0.04] flex items-center justify-center mb-3">
+                  <Clock size={22} className="text-kodo-text-dim" />
+                </div>
+                <div className="text-[13px] text-kodo-text-muted">{t.timeTracking.noEntries}</div>
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">

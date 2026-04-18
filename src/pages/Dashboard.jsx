@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
-  CalendarDays, Clock, TrendingUp, CheckCircle2,
+  CalendarDays, Clock, TrendingUp, CheckCircle2, FolderKanban,
   ArrowRight, Video, BarChart3, ListChecks, X, Mail, MessageSquare, Loader2
 } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
@@ -248,6 +248,14 @@ export default function Dashboard({ onNavigate }) {
               {t.dashboard.yourProjects}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+              {userProjectsWithTasks.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.04] flex items-center justify-center mb-3">
+                    <FolderKanban size={22} className="text-kodo-text-dim" />
+                  </div>
+                  <div className="text-[13px] text-kodo-text-muted">{t.dashboard.noProjects || 'No projects yet'}</div>
+                </div>
+              )}
               {userProjectsWithTasks.map((p, i) => (
                 <div
                   key={p.id}

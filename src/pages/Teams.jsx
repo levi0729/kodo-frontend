@@ -322,6 +322,19 @@ export default function TeamsPage({ onNavigate }) {
         </button>
       </div>
 
+      {teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4">
+            <Users size={28} className="text-kodo-text-dim" />
+          </div>
+          <div className="text-[15px] font-semibold text-white mb-1">{t.teamsPage.noTeams || 'No teams yet'}</div>
+          <div className="text-[13px] text-kodo-text-muted mb-4">{t.teamsPage.noTeamsDesc || 'Create a team to start collaborating'}</div>
+          <button onClick={() => setShowNewTeamModal(true)} className="kodo-btn-primary">
+            <Plus size={16} />
+            {t.teamsPage.newTeam}
+          </button>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
         {teams.map(team => {
           const members = (team.members || []).map(id => typeof id === 'object' ? id : getUserById(id)).filter(Boolean);
@@ -528,6 +541,7 @@ export default function TeamsPage({ onNavigate }) {
           );
         })}
       </div>
+      )}
 
       <NewTeamModal
         isOpen={showNewTeamModal}

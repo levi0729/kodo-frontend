@@ -183,8 +183,8 @@ export default function OrganizationsPage() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-white m-0">{tp.title}</h1>
-          <p className="text-[13px] text-kodo-text-muted mt-0.5 m-0">{tp.subtitle}</p>
+          <h1 className="text-[20px] md:text-[28px] font-bold text-white/95 font-display m-0">{tp.title}</h1>
+          <p className="text-kodo-text-muted mt-1 text-[13px] m-0">{tp.subtitle}</p>
         </div>
         <button
           onClick={() => { setEditingOrg(null); setShowModal(true); }}

@@ -53,6 +53,7 @@ const translations = {
       todaySchedule: 'Mai ütemterv',
       done: 'kész',
       yourProjects: 'Projektjeid',
+      noProjects: 'Még nincsenek projektek',
       progress: 'Haladás',
       noDeadline: 'Nincs határidő',
       daysLeft: '{n} nap van hátra',
@@ -128,6 +129,8 @@ const translations = {
       channelTypeStandard: 'Általános',
       channelTypePrivate: 'Privát',
       channelTypeAnnouncement: 'Bejelentés',
+      noTeams: 'Még nincsenek csapatok',
+      noTeamsDesc: 'Hozz létre egy csapatot az együttműködéshez',
     },
     messagesPage: {
       teams: 'Csapatok',
@@ -522,6 +525,7 @@ const translations = {
       todaySchedule: "Today's schedule",
       done: 'done',
       yourProjects: 'Your projects',
+      noProjects: 'No projects yet',
       progress: 'Progress',
       noDeadline: 'No deadline',
       daysLeft: '{n} days left',
@@ -583,6 +587,8 @@ const translations = {
       channelTypeStandard: 'Standard',
       channelTypePrivate: 'Private',
       channelTypeAnnouncement: 'Announcement',
+      noTeams: 'No teams yet',
+      noTeamsDesc: 'Create a team to start collaborating',
     },
     messagesPage: {
       teams: 'Teams',
