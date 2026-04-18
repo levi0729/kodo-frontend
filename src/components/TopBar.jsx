@@ -141,29 +141,39 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
               </button>
             </div>
             <div className="max-h-[360px] overflow-y-auto">
-              {allNotifications.map(n => {
-                const actor = getUserById(n.actor_id);
-                return (
-                  <div
-                    key={`${n.source}-${n.id}`}
-                    className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/[0.04] ${
-                      !n.is_read ? 'bg-indigo-500/[0.04]' : ''
-                    }`}
-                  >
-                    {actor && <Avatar user={actor} size={32} />}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        {n.source === 'mention' && <AtSign size={12} className="text-indigo-400 flex-shrink-0" />}
-                        <div className="text-[12px] font-medium text-kodo-text">{n.title}</div>
-                      </div>
-                      <div className="text-[11px] text-kodo-text-muted mt-0.5 truncate">{n.body}</div>
-                    </div>
-                    {!n.is_read && (
-                      <div className="w-[6px] h-[6px] rounded-full bg-indigo-500 mt-2 flex-shrink-0" />
-                    )}
+              {allNotifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 px-4">
+                  <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center mb-3">
+                    <Bell size={18} className="text-kodo-text-dim" />
                   </div>
-                );
-              })}
+                  <div className="text-[13px] font-medium text-kodo-text-secondary">{t.topbar.noNotifications || 'No notifications'}</div>
+                  <div className="text-[11px] text-kodo-text-dim mt-1">{t.topbar.noNotificationsDesc || "You're all caught up!"}</div>
+                </div>
+              ) : (
+                allNotifications.map(n => {
+                  const actor = getUserById(n.actor_id);
+                  return (
+                    <div
+                      key={`${n.source}-${n.id}`}
+                      className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/[0.04] ${
+                        !n.is_read ? 'bg-indigo-500/[0.04]' : ''
+                      }`}
+                    >
+                      {actor && <Avatar user={actor} size={32} />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {n.source === 'mention' && <AtSign size={12} className="text-indigo-400 flex-shrink-0" />}
+                          <div className="text-[12px] font-medium text-kodo-text">{n.title}</div>
+                        </div>
+                        <div className="text-[11px] text-kodo-text-muted mt-0.5 line-clamp-2">{n.body}</div>
+                      </div>
+                      {!n.is_read && (
+                        <div className="w-[6px] h-[6px] rounded-full bg-indigo-500 mt-2 flex-shrink-0" />
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}

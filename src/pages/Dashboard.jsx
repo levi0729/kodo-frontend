@@ -82,7 +82,7 @@ function MemberPopup({ user, onClose, onNavigate }) {
 
   return (
     <div
-      className="kodo-member-popup absolute right-0 sm:right-0 left-0 sm:left-auto top-full mt-1 z-50 w-auto sm:w-[260px] bg-[#1a1a24] border border-white/[0.1] rounded-xl shadow-2xl p-4 md:p-5 animate-fade-in-up"
+      className="kodo-member-popup absolute right-0 left-0 sm:left-auto top-full mt-1 z-[60] w-auto sm:w-[260px] bg-[#1a1a24] border border-white/[0.1] rounded-xl shadow-2xl p-4 md:p-5 animate-fade-in-up"
     >
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}

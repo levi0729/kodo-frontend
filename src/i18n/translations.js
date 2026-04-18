@@ -31,6 +31,8 @@ const translations = {
     topbar: {
       notifications: 'Értesítések',
       markAllRead: 'Összes olvasott',
+      noNotifications: 'Nincs értesítés',
+      noNotificationsDesc: 'Minden naprakész!',
       pageLabels: {
         dashboard: 'Dashboard',
         teams: 'Csapatok',
@@ -82,6 +84,7 @@ const translations = {
     tasksPage: {
       title: 'Feladatok',
       kanbanBoard: 'Kanban tábla',
+      emptyColumn: 'Még nincs feladat',
       newTask: 'Új feladat',
       filters: 'Szűrők',
       clearFilters: 'Törlés',
@@ -503,6 +506,8 @@ const translations = {
     topbar: {
       notifications: 'Notifications',
       markAllRead: 'Mark all read',
+      noNotifications: 'No notifications',
+      noNotificationsDesc: "You're all caught up!",
       pageLabels: {
         dashboard: 'Dashboard',
         teams: 'Teams',
@@ -549,6 +554,7 @@ const translations = {
     tasksPage: {
       title: 'Tasks',
       kanbanBoard: 'Kanban board',
+      emptyColumn: 'No tasks yet',
       newTask: 'New task',
       filters: 'Filters',
       clearFilters: 'Clear',

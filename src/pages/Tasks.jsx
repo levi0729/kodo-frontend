@@ -181,6 +181,11 @@ export default function TasksPage({ highlightTaskId }) {
                         snapshot.isDraggingOver ? 'bg-indigo-500/[0.06]' : ''
                       }`}
                     >
+                      {colTasks.length === 0 && !snapshot.isDraggingOver && (
+                        <div className="flex flex-col items-center justify-center py-6 text-center">
+                          <div className="text-[11px] text-kodo-text-dim">{t.tasksPage.emptyColumn || 'No tasks yet'}</div>
+                        </div>
+                      )}
                       {colTasks.map((task, index) => {
                         const taskLabels = task.labels || [];
                         const creator = task.creator || null;

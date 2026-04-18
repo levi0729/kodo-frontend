@@ -141,7 +141,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
           return (
             <button
               key={item.key}
-              onClick={() => onNavigate(item.key)}
+              onClick={() => { onNavigate(item.key); onMobileClose(); }}
               className={clsx(
                 'flex items-center gap-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all duration-150 border-none relative w-full',
                 !isExpanded ? 'p-2.5 justify-center' : 'px-3 py-2.5',
@@ -173,7 +173,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
 
       <div className={clsx('border-t border-white/[0.06] flex flex-col gap-0.5 p-2.5')}>
         <button
-          onClick={() => onNavigate('settings')}
+          onClick={() => { onNavigate('settings'); onMobileClose(); }}
           className={clsx(
             'flex items-center gap-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all duration-150 border-none w-full',
             !isExpanded ? 'p-2.5 justify-center' : 'px-3 py-2.5',
