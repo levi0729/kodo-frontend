@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import('@/pages/Settings'));
 const TimeTrackingPage = lazy(() => import('@/pages/TimeTracking'));
 const FriendsPage = lazy(() => import('@/pages/Friends'));
 const ActivityLogPage = lazy(() => import('@/pages/ActivityLog'));
+const OrganizationsPage = lazy(() => import('@/pages/Organizations'));
 const ProfilePage = lazy(() => import('@/pages/Profile'));
 import { ProjectProvider } from '@/context/ProjectContext';
 import { MessagesProvider } from '@/context/MessagesContext';
@@ -38,6 +39,7 @@ const PAGE_ROUTES = {
   'time-tracking': '/time-tracking',
   friends: '/friends',
   activity: '/activity',
+  organizations: '/organizations',
   profile: '/profile',
 };
 
@@ -145,6 +147,7 @@ function AppContent() {
                 <Route path="/time-tracking" element={<TimeTrackingPage />} />
                 <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
                 <Route path="/activity" element={<ActivityLogPage />} />
+                <Route path="/organizations" element={<OrganizationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

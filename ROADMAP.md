@@ -167,7 +167,7 @@ The database schema defines these tables, but there are no API endpoints or UI f
 
 37. [x] **Group conversations (`conversations` + `conversation_participants`)** — Full UI: Groups section in ChannelSidebar with create (+) button, CreateGroupModal for naming and selecting members, conversation messages in MessageThread/ComposeBox, integrated into MessagesContext with openConversation/sendConversationMessage/createGroupConversation. Backend: ConversationController handles CRUD + messaging via `/api/conversations`.
 
-38. [ ] **Organizations (`organizations`)** — workspace management with plan types (free, standard, business, pro, enterprise).
+38. [x] **Organizations (`organizations`)** — Full page with create/edit/delete modals, plan badges (free/standard/business/pro/enterprise), domain/storage/member limits display. Backend CRUD via OrganizationController. Sidebar nav entry, lazy-loaded route, HU/EN translations.
 
 39. [x] **Calendar RSVP** — the schema has `response_status` on event attendees but no API to accept/decline invitations.
 
