@@ -108,44 +108,62 @@ export default function FriendsPage({ onNavigate }) {
     });
   }, [allUsers, currentUser, connectedUserIds, searchQuery]);
 
+  const [actionLoading, setActionLoading] = useState(null);
+
   const handleAccept = async (record) => {
+    if (actionLoading) return;
+    setActionLoading(record.id);
     try {
       await friendsApi.accept(record.id);
       toast.success(t.friends.requestAccepted);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to accept request');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleDecline = async (record) => {
+    if (actionLoading) return;
+    setActionLoading(record.id);
     try {
       await friendsApi.decline(record.id);
       toast.success(t.friends.declined || 'Request declined');
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to decline request');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleRemove = async (record) => {
+    if (actionLoading) return;
     if (!confirm(t.friends.confirmRemove)) return;
+    setActionLoading(record.id);
     try {
       await friendsApi.remove(record.id);
       toast.success(t.friends.friendRemoved);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to remove friend');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleSendRequest = async (userId) => {
+    if (actionLoading) return;
+    setActionLoading(userId);
     try {
       await friendsApi.sendRequest(userId);
       toast.success(t.friends.requestSent);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to send request');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -232,9 +250,10 @@ export default function FriendsPage({ onNavigate }) {
                     </button>
                     <button
                       onClick={() => handleRemove(record)}
-                      className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
+                      disabled={actionLoading === record.id}
+                      className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <UserMinus size={14} />
+                      {actionLoading === record.id ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />}
                       {t.friends.remove}
                     </button>
                   </div>
@@ -276,14 +295,16 @@ export default function FriendsPage({ onNavigate }) {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={() => handleAccept(record)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-[12px] font-medium cursor-pointer border-none hover:bg-emerald-500/25 transition-colors"
+                              disabled={actionLoading === record.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-[12px] font-medium cursor-pointer border-none hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Check size={14} />
+                              {actionLoading === record.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                               {t.friends.accept}
                             </button>
                             <button
                               onClick={() => handleDecline(record)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors"
+                              disabled={actionLoading === record.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <X size={14} />
                               {t.friends.decline}

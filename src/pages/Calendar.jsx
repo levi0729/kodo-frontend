@@ -346,11 +346,11 @@ export default function CalendarPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-        <button onClick={() => nav(-1)}
+        <button onClick={() => nav(-1)} aria-label={cal.previous || 'Previous'}
           className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer border-none bg-transparent text-kodo-text-muted">
           <ChevronLeft size={18} />
         </button>
-        <button onClick={() => nav(1)}
+        <button onClick={() => nav(1)} aria-label={cal.next || 'Next'}
           className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer border-none bg-transparent text-kodo-text-muted">
           <ChevronRight size={18} />
         </button>

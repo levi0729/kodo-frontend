@@ -53,7 +53,7 @@ export default function FindFriendsModal({ friendIds, pendingRequests, setPendin
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="bg-[#1a1a24] border border-white/[0.08] rounded-2xl w-full max-w-[440px] max-h-[80vh] overflow-hidden animate-fade-in-up" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <h2 className="text-[16px] font-semibold text-white">{t.friends.findFriends}</h2>

@@ -191,6 +191,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
         <div className="h-[52px] flex items-center gap-2.5 px-3 md:px-6 border-b border-white/[0.06] flex-shrink-0">
           <button
             onClick={() => setMobileShowChat(false)}
+            aria-label={t.common.back || 'Back'}
             className="p-2 rounded-lg text-kodo-text-muted hover:text-kodo-text-secondary hover:bg-white/[0.04] transition-colors cursor-pointer bg-transparent border-none md:hidden"
           >
             <ChevronLeft size={20} />
