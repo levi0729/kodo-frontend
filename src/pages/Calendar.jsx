@@ -15,7 +15,7 @@ import { useAppData } from '@/context/AppDataContext';
 
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 const TOTAL_SPAN = HOURS.length;
-const TODAY = new Date();
+const getToday = () => new Date();
 
 function getMonday(d) {
   const r = new Date(d);
@@ -64,12 +64,12 @@ function toDateStr(d) {
 }
 
 /* EventCard — memoized: re-renders only when event/pos identity changes */
-const EventCard = memo(function EventCard({ event, pos, onSelect, getUserById }) {
+const EventCard = memo(function EventCard({ event, pos, onSelect, getUserById, locale }) {
   const { t } = useTheme();
   const s = new Date(event.start_time);
   const e = new Date(event.end_time);
-  const startStr = s.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
-  const endStr = e.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+  const startStr = s.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const endStr = e.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   const isShort = pos.duration < 0.75;
 
   return (
@@ -130,6 +130,8 @@ export default function CalendarPage() {
   const { t } = useTheme();
   const cal = t.calendarPage;
   const toast = useToast();
+  const { language } = useTheme();
+  const locale = language === 'en' ? 'en-US' : 'hu-HU';
 
   const TABS = [
     { key: 'all', label: cal.tabs.all },
@@ -220,9 +222,9 @@ export default function CalendarPage() {
     try {
       const res = await calendarApi.create(eventData);
       setEvents(prev => [...prev, res.calendar_event || res.data]);
-      toast.success('Event created!');
+      toast.success(cal.eventCreated);
     } catch (err) {
-      toast.error(err.message || 'Failed to create event');
+      toast.error(err.message || cal.eventCreateFailed);
     }
   };
 
@@ -233,7 +235,7 @@ export default function CalendarPage() {
       setEvents(prev => prev.map(e => e.id === eventId ? updated : e));
       toast.success(cal.eventUpdated);
     } catch (err) {
-      toast.error(err.message || 'Failed to update event');
+      toast.error(err.message || cal.eventUpdateFailed);
     }
   };
 
@@ -245,7 +247,7 @@ export default function CalendarPage() {
       setSelectedEvent(null);
       toast.success(cal.eventDeleted);
     } catch (err) {
-      toast.error(err.message || 'Failed to delete event');
+      toast.error(err.message || cal.eventDeleteFailed);
     }
   };
 
@@ -254,12 +256,18 @@ export default function CalendarPage() {
       const res = await calendarApi.rsvp(eventId, responseStatus);
       const updated = res.calendar_event || res.data;
       if (updated) {
-        setEvents(prev => prev.map(e => e.id === eventId ? { ...e, ...updated } : e));
-        setSelectedEvent(prev => prev && prev.id === eventId ? { ...prev, ...updated } : prev);
+        const merge = (existing) => ({
+          ...existing,
+          ...updated,
+          attendees: updated.attendees || existing.attendees,
+          attendee_responses: updated.attendee_responses || existing.attendee_responses,
+        });
+        setEvents(prev => prev.map(e => e.id === eventId ? merge(e) : e));
+        setSelectedEvent(prev => prev && prev.id === eventId ? merge(prev) : prev);
       }
       toast.success(cal.rsvpUpdated);
     } catch (err) {
-      toast.error(err.message || 'Failed to RSVP');
+      toast.error(err.message || cal.rsvpFailed);
     }
   };
 
@@ -369,7 +377,7 @@ export default function CalendarPage() {
           <div className={`grid ${viewMode === 'week' ? 'grid-cols-[40px_repeat(5,1fr)] sm:grid-cols-[50px_repeat(5,1fr)]' : 'grid-cols-[40px_1fr] sm:grid-cols-[50px_1fr]'} border-b border-white/[0.06] flex-shrink-0 ${viewMode === 'week' ? 'min-w-[420px] sm:min-w-[560px]' : ''}`}>
             <div className="p-2" />
             {(viewMode === 'week' ? weekDays : [currentDate]).map((d, i) => {
-              const isToday = sameDay(d, TODAY);
+              const isToday = sameDay(d, getToday());
               return (
                 <div key={i} className={`text-center py-2.5 border-l border-white/[0.04] ${isToday ? 'bg-kodo-accent/[0.06]' : ''}`}>
                   <div className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-wider mb-0.5">
@@ -395,7 +403,7 @@ export default function CalendarPage() {
 
             {(viewMode === 'week' ? weekDays : [currentDate]).map((d, idx) => {
               const dayEvts = eventsForDay(d);
-              const isToday = sameDay(d, TODAY);
+              const isToday = sameDay(d, getToday());
               return (
                 <div key={idx} className={`relative border-l border-white/[0.04] ${isToday ? 'bg-kodo-accent/[0.03]' : ''}`}>
                   {HOURS.map((h, i) => (
@@ -403,7 +411,7 @@ export default function CalendarPage() {
                       style={{ top: `${(i / TOTAL_SPAN) * 100}%` }} />
                   ))}
                   {dayEvts.map(event => (
-                    <EventCard key={event.id} event={event} pos={getEventPos(event)} onSelect={setSelectedEvent} getUserById={getUserById} />
+                    <EventCard key={event.id} event={event} pos={getEventPos(event)} onSelect={setSelectedEvent} getUserById={getUserById} locale={locale} />
                   ))}
                 </div>
               );
@@ -428,7 +436,7 @@ export default function CalendarPage() {
               <div key={wi} className="grid grid-cols-7 border-b border-white/[0.03] last:border-b-0 min-h-0 overflow-hidden">
                 {week.map((day, di) => {
                   const isCurMonth = day.getMonth() === currentDate.getMonth();
-                  const isToday = sameDay(day, TODAY);
+                  const isToday = sameDay(day, getToday());
                   const dayEvts = eventsForDay(day);
                   return (
                     <div key={di} className={`p-1.5 border-l border-white/[0.04] first:border-l-0 overflow-hidden ${

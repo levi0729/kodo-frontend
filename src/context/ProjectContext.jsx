@@ -2,12 +2,15 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { projects as projectsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
+import { useTheme } from '@/context/ThemeContext';
 
 const ProjectContext = createContext(null);
 
 export function ProjectProvider({ children }) {
   const { currentUser, isLoggedIn } = useAuth();
   const toast = useToast();
+  const { t } = useTheme();
+  const tt = t.taskToasts;
   const [userProjects, setUserProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +29,7 @@ export function ProjectProvider({ children }) {
       }
     } catch (err) {
       setError(err.message);
-      toast.error('Failed to load projects: ' + err.message);
+      toast.error(tt.projectLoadFailed + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -59,10 +62,10 @@ export function ProjectProvider({ children }) {
       const newProject = data.project;
       setUserProjects(prev => [newProject, ...prev]);
       setActiveProjectId(newProject.id);
-      toast.success('Project created successfully!');
+      toast.success(tt.projectCreateSuccess);
       return newProject;
     } catch (err) {
-      toast.error('Failed to create project: ' + err.message);
+      toast.error(tt.projectCreateFailed + ': ' + err.message);
       throw err;
     } finally {
       setLoading(false);

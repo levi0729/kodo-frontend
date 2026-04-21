@@ -110,8 +110,15 @@ async function uploadRequest(endpoint, formData) {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const message = data?.message || data?.errors ? Object.values(data.errors || {}).flat().join(', ') : `Upload failed (${res.status})`;
-    const err = new Error(message || 'Upload failed');
+    let message;
+    if (data?.message) {
+      message = data.message;
+    } else if (data?.errors) {
+      message = Object.values(data.errors).flat().join(', ');
+    } else {
+      message = `Upload failed (${res.status})`;
+    }
+    const err = new Error(message);
     err.status = res.status;
     throw err;
   }
@@ -453,7 +460,7 @@ export const timeEntries = {
 
   async summary(params) {
     const qs = new URLSearchParams(params).toString();
-    return request(`/time-entries/summary?${qs}`);
+    return request(`/time-entries/summary${qs ? `?${qs}` : ''}`);
   },
 };
 
@@ -479,7 +486,8 @@ export const activityLogs = {
 
 export const participants = {
   async list(entityType, entityId) {
-    return request(`/participants?entity_type=${entityType}&entity_id=${entityId}`);
+    const qs = new URLSearchParams({ entity_type: entityType, entity_id: entityId }).toString();
+    return request(`/participants?${qs}`);
   },
 
   async add(entityType, entityId, userId, role = 'member') {

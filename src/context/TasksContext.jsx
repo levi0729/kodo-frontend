@@ -3,6 +3,7 @@ import { tasks as tasksApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useProject } from '@/context/ProjectContext';
 import { useToast } from '@/components/Toast';
+import { useTheme } from '@/context/ThemeContext';
 
 const TasksContext = createContext(null);
 
@@ -12,6 +13,8 @@ export function TasksProvider({ children }) {
   const { isLoggedIn } = useAuth();
   const { activeProjectId } = useProject();
   const toast = useToast();
+  const { t } = useTheme();
+  const tt = t.taskToasts;
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,7 +34,7 @@ export function TasksProvider({ children }) {
       setHasMore(list.length >= PER_PAGE);
     } catch (err) {
       setError(err.message);
-      toast.error('Failed to load tasks: ' + err.message);
+      toast.error(tt.loadFailed + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +50,7 @@ export function TasksProvider({ children }) {
       setCurrentPage(nextPage);
       setHasMore(list.length >= PER_PAGE);
     } catch (err) {
-      toast.error('Failed to load more tasks');
+      toast.error(tt.loadMoreFailed);
     }
   }, [isLoggedIn, activeProjectId, hasMore, currentPage]);
 
@@ -77,9 +80,9 @@ export function TasksProvider({ children }) {
 
     try {
       await tasksApi.update(taskId, { status: nextStatus });
-      toast.success(`Task moved to ${nextStatus.replace('_', ' ')}`);
+      toast.success(tt.movedTo.replace('{status}', (t.tasksPage.columns[nextStatus] || nextStatus)));
     } catch (err) {
-      toast.error('Failed to update task: ' + err.message);
+      toast.error(tt.updateFailed + ': ' + err.message);
       if (previous) setTasks(previous); // instant revert, no refetch needed
     }
   }, [toast]);
@@ -99,10 +102,10 @@ export function TasksProvider({ children }) {
         assignees: taskData.assignees || [],
       });
       setTasks(prev => [data.task, ...prev]);
-      toast.success('Task created successfully!');
+      toast.success(tt.createSuccess);
       return data.task;
     } catch (err) {
-      toast.error('Failed to create task: ' + err.message);
+      toast.error(tt.createFailed + ': ' + err.message);
       throw err;
     } finally {
       setLoading(false);
@@ -121,18 +124,18 @@ export function TasksProvider({ children }) {
       setTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
       return data.task;
     } catch (err) {
-      toast.error('Failed to update task: ' + err.message);
+      toast.error(tt.updateFailed + ': ' + err.message);
       if (previous) setTasks(previous); // instant revert, no refetch needed
     }
-  }, [toast]);
+  }, [toast, tt]);
 
   const deleteTask = useCallback(async (taskId) => {
     try {
       await tasksApi.destroy(taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success('Task deleted');
+      toast.success(tt.deleteSuccess);
     } catch (err) {
-      toast.error('Failed to delete task: ' + err.message);
+      toast.error(tt.deleteFailed + ': ' + err.message);
     }
   }, [toast]);
 

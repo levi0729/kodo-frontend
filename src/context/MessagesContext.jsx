@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { chat as chatApi, files as filesApi, channels as channelsApi, conversations as conversationsApi } from '@/services/api';
+import { chat as chatApi, files as filesApi, channels as channelsApi, conversations as conversationsApi, getToken } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
+import WebSocketClient from '@/services/websocket';
 
 const MessagesContext = createContext(null);
 
-const POLL_INTERVAL = 3000; // 3 seconds
+const POLL_INTERVAL = 3000; // 3 seconds — fallback when WS unavailable
 const DM_ROOM_MULTIPLIER = 1_000_000_000; // Must match backend constant
 
 export function MessagesProvider({ children }) {
@@ -29,6 +30,60 @@ export function MessagesProvider({ children }) {
   // Polling ref
   const pollRef = useRef(null);
   const lastMessageIdRef = useRef(0);
+
+  // WebSocket
+  const wsRef = useRef(null);
+  const [wsStatus, setWsStatus] = useState('disconnected'); // disconnected | connecting | connected | failed
+
+  // ── WebSocket lifecycle ─────────────────────────────────
+
+  const handleWsMessage = useCallback((data) => {
+    if (data.type === 'new_message' && data.message) {
+      const msg = data.message;
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, msg.id);
+    } else if (data.type === 'reaction_updated' && data.message) {
+      setMessages(prev => prev.map(m => m.id === data.message.id ? { ...m, reactions: data.message.reactions } : m));
+    } else if (data.type === 'message_pinned' && data.message_id) {
+      setMessages(prev => prev.map(m => m.id === data.message_id ? { ...m, is_pinned: data.is_pinned } : m));
+    } else if (data.type === 'notification' && data.notification) {
+      setNotifications(prev => [{ ...data.notification, id: data.notification.id || Date.now(), is_read: false }, ...prev]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      if (wsRef.current) { wsRef.current.disconnect(); wsRef.current = null; }
+      setWsStatus('disconnected');
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    const ws = new WebSocketClient({
+      token,
+      onMessage: handleWsMessage,
+      onStatusChange: setWsStatus,
+    });
+    wsRef.current = ws;
+    ws.connect();
+
+    return () => { ws.disconnect(); wsRef.current = null; };
+  }, [isLoggedIn, handleWsMessage]);
+
+  // Join active room via WebSocket when room changes
+  const prevRoomRef = useRef(null);
+  useEffect(() => {
+    const ws = wsRef.current;
+    if (!ws?.isConnected) return;
+    if (prevRoomRef.current) ws.leaveRoom(prevRoomRef.current);
+    if (activeRoomId) ws.joinRoom(activeRoomId);
+    prevRoomRef.current = activeRoomId;
+  }, [activeRoomId, wsStatus]);
 
   // ── Conversations ──────────────────────────────────────
 
@@ -184,16 +239,18 @@ export function MessagesProvider({ children }) {
       await fetchGroupConversations();
       return data.conversation;
     } catch (err) {
-      toast.error(err.message || 'Failed to create group');
+      toast.error(err.message || t.taskDetail.createGroupFailed);
       throw err;
     }
   }, [toast, fetchGroupConversations]);
 
-  // ── Polling for new messages (pauses when tab is hidden) ─
+  // ── Polling fallback (only when WebSocket is not connected) ─
+
+  const wsConnected = wsStatus === 'connected';
 
   const startPolling = useCallback(() => {
     if (pollRef.current) clearInterval(pollRef.current);
-    if (!activeRoomId || !isLoggedIn) return;
+    if (!activeRoomId || !isLoggedIn || wsConnected) return;
 
     pollRef.current = setInterval(async () => {
       try {
@@ -210,7 +267,7 @@ export function MessagesProvider({ children }) {
         }
       } catch { /* silent */ }
     }, POLL_INTERVAL);
-  }, [activeRoomId, isLoggedIn]);
+  }, [activeRoomId, isLoggedIn, wsConnected]);
 
   useEffect(() => {
     startPolling();
@@ -352,6 +409,7 @@ export function MessagesProvider({ children }) {
       markNotificationRead,
       markAllNotificationsRead,
       unreadCount,
+      wsStatus,
     }}>
       {children}
     </MessagesContext.Provider>

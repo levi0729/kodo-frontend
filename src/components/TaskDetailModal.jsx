@@ -10,6 +10,7 @@ import { useTasks } from '@/context/TasksContext';
 export default function TaskDetailModal({ task, isOpen, onClose }) {
   const { t, language } = useTheme();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
+  const td = t.taskDetail;
   const { updateTask, deleteTask } = useTasks();
   const modalRef = useRef(null);
 
@@ -168,7 +169,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
           {/* Description */}
           <div className="mb-5">
             <h3 className="text-[12px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em] mb-2">
-              {language === 'hu' ? 'Leírás' : 'Description'}
+              {td.description}
             </h3>
             {editingDesc ? (
               <div>
@@ -193,7 +194,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
                 onClick={() => setEditingDesc(true)}
                 className="text-[13px] text-kodo-text-secondary cursor-pointer hover:bg-white/[0.04] rounded-lg p-2 -m-2 transition-colors min-h-[40px]"
               >
-                {task.description || (language === 'hu' ? 'Kattints a leírás hozzáadásához...' : 'Click to add description...')}
+                {task.description || td.descriptionPlaceholder}
               </div>
             )}
           </div>
@@ -202,7 +203,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
           <div className="mb-5">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-[12px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em]">
-                {language === 'hu' ? 'Teendők' : 'Checklist'}
+                {td.checklist}
               </h3>
               {totalCount > 0 && (
                 <span className="text-[11px] text-kodo-text-dim">{completedCount}/{totalCount}</span>
@@ -256,7 +257,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
                 value={newItemText}
                 onChange={e => setNewItemText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-                placeholder={language === 'hu' ? 'Új elem hozzáadása...' : 'Add new item...'}
+                placeholder={td.addItem}
                 className="flex-1 px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[12px] text-white placeholder:text-kodo-text-dim focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
               />
               <button
@@ -273,7 +274,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
           {task.assignee_users?.length > 0 && (
             <div className="mb-5">
               <h3 className="text-[12px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em] mb-2">
-                {language === 'hu' ? 'Felelősök' : 'Assignees'}
+                {td.assignees}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {task.assignee_users.map(u => (
@@ -290,7 +291,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
           {task.estimated_hours > 0 && (
             <div className="flex items-center gap-2 text-[12px] text-kodo-text-dim mb-4">
               <Clock size={13} />
-              {language === 'hu' ? `Becsült idő: ${task.estimated_hours}h` : `Estimated: ${task.estimated_hours}h`}
+              {td.estimated.replace('{n}', task.estimated_hours)}
             </div>
           )}
         </div>
@@ -308,7 +309,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }) {
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-muted text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors"
           >
-            {language === 'hu' ? 'Bezárás' : 'Close'}
+            {td.close}
           </button>
         </div>
       </div>

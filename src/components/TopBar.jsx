@@ -103,7 +103,7 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
         >
           <Search size={18} />
           <kbd className="text-[10px] text-kodo-text-dim bg-white/[0.06] px-1.5 py-0.5 rounded border border-white/[0.08] font-mono">
-            ⌘K
+            {navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl+K'}
           </kbd>
         </button>
         <button

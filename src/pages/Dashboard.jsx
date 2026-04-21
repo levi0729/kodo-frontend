@@ -59,7 +59,7 @@ function TodaySchedule({ project, onNavigate, calendarEvents }) {
               </div>
               {evt.is_online_meeting && (
                 <div className="text-[10px] text-indigo-400 flex items-center gap-1 mt-0.5">
-                  <Video size={10} /> Online
+                  <Video size={10} /> {t.calendarPage.online}
                 </div>
               )}
             </div>
@@ -271,9 +271,9 @@ export default function Dashboard({ onNavigate }) {
                   </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] text-kodo-text-muted">{t.dashboard.progress}</span>
-                    <span className="text-[12px] font-semibold" style={{ color: p.color }}>{p.progress}%</span>
+                    <span className="text-[12px] font-semibold" style={{ color: p.color }}>{p.userProgress}%</span>
                   </div>
-                  <ProgressBar value={p.progress} color={p.color} height={5} />
+                  <ProgressBar value={p.userProgress} color={p.color} height={5} />
                   <div className="flex items-center justify-between mt-4">
                     <AvatarStack
                       users={teamMembers.slice(0, 3)}

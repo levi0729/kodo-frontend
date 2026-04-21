@@ -76,7 +76,9 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
       status: 'confirmed',
       reminder_minutes: 15,
       color: form.color,
-      attendees: form.attendees.length ? form.attendees : [currentUser.id],
+      attendees: form.attendees.length
+        ? (form.attendees.includes(currentUser.id) ? form.attendees : [currentUser.id, ...form.attendees])
+        : [currentUser.id],
     };
 
     if (editEvent) {

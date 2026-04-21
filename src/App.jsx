@@ -20,7 +20,7 @@ const FriendsPage = lazy(() => import('@/pages/Friends'));
 const ActivityLogPage = lazy(() => import('@/pages/ActivityLog'));
 const OrganizationsPage = lazy(() => import('@/pages/Organizations'));
 const ProfilePage = lazy(() => import('@/pages/Profile'));
-import { ProjectProvider } from '@/context/ProjectContext';
+import { ProjectProvider, useProject } from '@/context/ProjectContext';
 import { MessagesProvider } from '@/context/MessagesContext';
 import { AppDataProvider } from '@/context/AppDataContext';
 import { TasksProvider } from '@/context/TasksContext';
@@ -108,12 +108,13 @@ function AppContent() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [isLoggedIn]);
 
+  const { activeProject } = useProject();
   useEffect(() => {
-    if (!isLoggedIn) return;
-    participantsApi.list('project', 1)
+    if (!isLoggedIn || !activeProject?.id) return;
+    participantsApi.list('project', activeProject.id)
       .then(data => setTeamMembers((data.participants || data.data || []).map(p => p.user || p)))
       .catch(() => {});
-  }, [isLoggedIn]);
+  }, [isLoggedIn, activeProject?.id]);
 
   if (!isLoggedIn) {
     return <AuthPage />;

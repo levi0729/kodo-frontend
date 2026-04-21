@@ -64,7 +64,7 @@ const DEFAULT_SETTINGS = {
 export default function SettingsPage() {
   const toast = useToast();
   const { currentUser, refreshUser } = useAuth();
-  const { theme, setTheme, language, setLanguage, t } = useTheme();
+  const { theme, setTheme, language, setLanguage, fontSize, setFontSize, t } = useTheme();
   const s = t.settings;
 
   const [settingsState, setSettingsState] = useState(DEFAULT_SETTINGS);
@@ -105,6 +105,7 @@ export default function SettingsPage() {
           Object.keys(prev).map(k => [k, loaded[k] !== undefined && loaded[k] !== null ? loaded[k] : prev[k]])
         ),
       }));
+      if (loaded.font_size) setFontSize(loaded.font_size);
       setSettingsLoaded(true);
     }).catch(() => setSettingsLoaded(true));
   }, []);
@@ -262,14 +263,14 @@ export default function SettingsPage() {
               <div className="text-[12px] text-kodo-text-muted mt-0.5">{s.fontSizeDesc}</div>
             </div>
             <SegmentedControl
-              value={settingsState.font_size}
+              value={fontSize}
               options={[
                 { key: 'small', label: s.fontSmall },
                 { key: 'medium', label: s.fontMedium },
                 { key: 'large', label: s.fontLarge },
                 { key: 'xlarge', label: s.fontXlarge },
               ]}
-              onChange={k => updateSetting('font_size', k)}
+              onChange={k => { setFontSize(k); updateSetting('font_size', k); }}
             />
           </div>
         </div>
@@ -281,7 +282,6 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-5">
           {[
             { label: s.pushNotif, desc: s.pushNotifDesc, key: 'push_notifications' },
-            { label: s.emailNotif, desc: s.emailNotifDesc, key: 'email_notifications' },
             { label: s.desktopNotif, desc: s.desktopNotifDesc, key: 'desktop_notifications' },
             { label: s.notifSound, desc: s.notifSoundDesc, key: 'notification_sound' },
             { label: s.dndMode, desc: s.dndModeDesc, key: 'dnd_enabled' },
@@ -382,29 +382,6 @@ export default function SettingsPage() {
               onChange={k => updateSetting('allow_direct_messages', k)}
             />
           </div>
-        </div>
-      </div>
-
-      {/* ── Accessibility ──────────────────────────── */}
-      <div className="kodo-card p-4 md:p-6 mb-4">
-        <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.accessibility}</h3>
-        <div className="flex flex-col gap-5">
-          {[
-            { label: s.reduceMotion, desc: s.reduceMotionDesc, key: 'reduce_motion' },
-            { label: s.highContrast, desc: s.highContrastDesc, key: 'high_contrast' },
-          ].map(item => (
-            <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="text-[13px] font-medium text-kodo-text">{item.label}</div>
-                <div className="text-[12px] text-kodo-text-muted mt-0.5">{item.desc}</div>
-              </div>
-              <Toggle
-                value={!!settingsState[item.key]}
-                disabled={!settingsLoaded}
-                onChange={v => updateSetting(item.key, v)}
-              />
-            </div>
-          ))}
         </div>
       </div>
 

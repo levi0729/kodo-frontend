@@ -180,6 +180,7 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
               onClick={() => fileInputRef.current?.click()}
               className="text-kodo-text-dim hover:text-kodo-text-secondary transition-colors cursor-pointer bg-transparent border-none p-0"
               title={t.messagesPage.attachFile}
+              aria-label={t.messagesPage.attachFile}
             >
               <Paperclip size={18} />
             </button>
@@ -204,6 +205,7 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
               onClick={handleAtButtonClick}
               className="text-kodo-text-dim hover:text-kodo-text-secondary transition-colors cursor-pointer bg-transparent border-none p-0"
               title={t.messagesPage.tagMember}
+              aria-label={t.messagesPage.tagMember}
             >
               <AtSign size={18} />
             </button>

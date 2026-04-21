@@ -134,7 +134,7 @@ export default function ChannelSidebar({
               }`}
             >
               <Avatar user={u} size={22} showStatus />
-              {u.display_name}
+              <span className="truncate">{u.display_name}</span>
             </button>
           ))}
           {filteredMembers.length === 0 && (

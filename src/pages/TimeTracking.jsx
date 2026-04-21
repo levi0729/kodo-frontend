@@ -93,23 +93,21 @@ export default function TimeTracking() {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    const durationMinutes = Math.max(1, Math.round(elapsed / 60));
-    const startedAt = new Date(startTimeRef.current).toISOString();
-    const endedAt = new Date().toISOString();
+    const hours = Math.max(0.01, Math.round((elapsed / 3600) * 100) / 100);
+    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     try {
       await timeEntriesApi.create({
         description: description || undefined,
-        duration_minutes: durationMinutes,
-        started_at: startedAt,
-        ended_at: endedAt,
+        hours,
+        date,
         project_id: activeProject?.id || undefined,
       });
       setDescription('');
       setElapsed(0);
       await loadEntries();
     } catch (err) {
-      toast.error(err.message || 'Failed to save time entry');
+      toast.error(err.message || t.timeTracking.saveFailed);
     }
   };
 
@@ -119,7 +117,7 @@ export default function TimeTracking() {
       setEntries(prev => prev.filter(e => e.id !== id));
       toast.success(t.timeTracking.entryDeleted);
     } catch (err) {
-      toast.error(err.message || 'Failed to delete entry');
+      toast.error(err.message || t.timeTracking.deleteFailed);
     }
   };
 
@@ -129,10 +127,10 @@ export default function TimeTracking() {
     const dailyTotals = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
 
     entries.forEach(entry => {
-      const entryDate = new Date(entry.started_at || entry.created_at);
+      const entryDate = new Date(entry.date || entry.created_at);
       if (entryDate >= monday) {
         const dayIndex = (entryDate.getDay() + 6) % 7; // 0=Mon, 6=Sun
-        dailyTotals[dayIndex] += entry.duration_minutes || 0;
+        dailyTotals[dayIndex] += Math.round((entry.hours || 0) * 60);
       }
     });
 
@@ -147,9 +145,9 @@ export default function TimeTracking() {
 
   const exportCSV = () => {
     if (entries.length === 0) return;
-    const header = 'Description,Duration (min),Date,Project\n';
+    const header = 'Description,Hours,Date,Project\n';
     const rows = entries.map(e =>
-      `"${(e.description || '').replace(/"/g, '""')}",${e.duration_minutes || 0},"${formatDate(e.started_at || e.created_at)}","${(e.project_name || '').replace(/"/g, '""')}"`
+      `"${(e.description || '').replace(/"/g, '""')}",${e.hours || 0},"${formatDate(e.date || e.created_at)}","${(e.project?.name || '').replace(/"/g, '""')}"`
     ).join('\n');
     const csv = header + rows;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -289,13 +287,13 @@ export default function TimeTracking() {
                     </div>
                     <div className="flex items-center gap-2 sm:contents">
                       <span className="text-[13px] text-kodo-text-muted font-mono tabular-nums">
-                        {formatDuration(entry.duration_minutes)}
+                        {formatDuration(Math.round((entry.hours || 0) * 60))}
                       </span>
                       <span className="text-[12px] text-kodo-text-muted hidden sm:inline">
-                        {formatDate(entry.started_at || entry.created_at)}
+                        {formatDate(entry.date || entry.created_at)}
                       </span>
                       <span className="text-[11px] text-kodo-text-dim sm:hidden">
-                        · {formatDate(entry.started_at || entry.created_at)}
+                        · {formatDate(entry.date || entry.created_at)}
                       </span>
                     </div>
                     <button

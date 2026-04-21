@@ -3,9 +3,12 @@ import translations from '@/i18n/translations';
 
 const ThemeContext = createContext();
 
+const FONT_SIZE_MAP = { small: '14px', medium: '16px', large: '18px', xlarge: '20px' };
+
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => sessionStorage.getItem('kodo-theme') || 'dark');
   const [language, setLanguage] = useState(() => sessionStorage.getItem('kodo-lang') || 'hu');
+  const [fontSize, setFontSize] = useState(() => sessionStorage.getItem('kodo-font-size') || 'medium');
 
   useEffect(() => {
     sessionStorage.setItem('kodo-theme', theme);
@@ -16,10 +19,15 @@ export function ThemeProvider({ children }) {
     sessionStorage.setItem('kodo-lang', language);
   }, [language]);
 
+  useEffect(() => {
+    sessionStorage.setItem('kodo-font-size', fontSize);
+    document.documentElement.style.fontSize = FONT_SIZE_MAP[fontSize] || '16px';
+  }, [fontSize]);
+
   const t = translations[language] || translations.hu;
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
+    <ThemeContext.Provider value={{ theme, setTheme, language, setLanguage, fontSize, setFontSize, t }}>
       {children}
     </ThemeContext.Provider>
   );

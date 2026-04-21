@@ -46,7 +46,7 @@ function TeamChannelsSection({ team, isOwner, onStartChat }) {
       setShowCreate(false);
       toast.success(tp.channelCreated);
     } catch (err) {
-      toast.error(err.message || 'Failed to create channel');
+      toast.error(err.message || tp.channelCreateFailed);
     }
     setCreating(false);
   };
@@ -58,7 +58,7 @@ function TeamChannelsSection({ team, isOwner, onStartChat }) {
       setChannels(prev => prev.filter(c => c.id !== channelId));
       toast.success(tp.channelDeleted);
     } catch (err) {
-      toast.error(err.message || 'Failed to delete channel');
+      toast.error(err.message || tp.channelDeleteFailed);
     }
   };
 
@@ -233,7 +233,7 @@ export default function TeamsPage({ onNavigate }) {
       setTeams(teamsRes.teams || teamsRes.data || []);
       toast.success(t.teamsPage.teamCreated || 'Team created!');
     } catch (err) {
-      toast.error(err.message || 'Failed to create team');
+      toast.error(err.message || t.teamsPage.teamCreateFailed);
     }
   };
 
@@ -245,7 +245,7 @@ export default function TeamsPage({ onNavigate }) {
       setTeams(teamsRes.teams || teamsRes.data || []);
       toast.success(t.teamsPage.memberAdded || 'Member added!');
     } catch (err) {
-      toast.error(err.message || 'Failed to add member');
+      toast.error(err.message || t.teamsPage.memberAddFailed);
     }
   };
 
@@ -371,7 +371,7 @@ export default function TeamsPage({ onNavigate }) {
                     value={editForm.description}
                     onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
                     className="w-full px-2 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-[12px] text-kodo-text-muted mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    placeholder="Description"
+                    placeholder={t.teamsPage.channelDescription || 'Description'}
                   />
                   <div className="flex items-center gap-1.5 mb-2">
                     {TEAM_COLORS.map(c => (

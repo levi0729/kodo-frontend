@@ -23,25 +23,26 @@ export default function ForgotPasswordScreen({ onBack }) {
       setSent(true);
       toast.success(a.resetEmailSent || 'Reset link sent!');
     } catch (err) {
-      setError(err.message || 'Failed to send reset email');
+      setError(err.message || a.resetSendFailed);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-kodo-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-kodo-bg flex items-center justify-center p-4 overflow-y-auto">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-500/[0.04] blur-3xl" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-purple-500/[0.04] blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-[420px]">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-4">
-            <KeyRound size={32} className="text-indigo-400" />
+      <div className="relative w-full max-w-[420px] my-auto py-6">
+        <div className="flex flex-col items-center mb-6 sm:mb-8">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-3 sm:mb-4">
+            <KeyRound size={28} className="text-indigo-400 sm:hidden" />
+            <KeyRound size={32} className="text-indigo-400 hidden sm:block" />
           </div>
-          <h1 className="text-[28px] font-bold text-white font-display tracking-tight">
+          <h1 className="text-[22px] sm:text-[28px] font-bold text-white font-display tracking-tight">
             {a.forgotPasswordTitle}
           </h1>
           <p className="text-[14px] text-kodo-text-muted mt-1">

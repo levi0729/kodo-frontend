@@ -5,18 +5,35 @@ const STATUS_COLORS = { online: '#22c55e', away: '#f59e0b', dnd: '#ef4444', offl
 
 export default function Avatar({ user, size = 36, showStatus = false, className = '' }) {
   if (!user) return null;
-  const bg = COLORS[user.id % COLORS.length];
-  const initials = user.display_name.split(' ').map(n => n[0]).join('').slice(0, 2);
+  const bg = COLORS[(user.id || 0) % COLORS.length];
+  const name = user.display_name || user.name || '?';
+  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2);
 
   return (
     <div className={clsx('relative flex-shrink-0', className)} style={{ width: size, height: size }}>
       {user.avatar_url ? (
-        <img
-          src={user.avatar_url}
-          alt={user.display_name}
-          className="rounded-full object-cover"
-          style={{ width: size, height: size }}
-        />
+        <>
+          <img
+            src={user.avatar_url}
+            alt={name}
+            className="rounded-full object-cover"
+            style={{ width: size, height: size }}
+            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex'); }}
+          />
+          <div
+            className="rounded-full items-center justify-center text-white font-semibold"
+            style={{
+              width: size,
+              height: size,
+              backgroundColor: bg,
+              fontSize: size * 0.38,
+              letterSpacing: '0.02em',
+              display: 'none',
+            }}
+          >
+            {initials}
+          </div>
+        </>
       ) : (
         <div
           className="rounded-full flex items-center justify-center text-white font-semibold"

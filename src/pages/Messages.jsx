@@ -20,7 +20,8 @@ export default function MessagesPage({ dmUserId, teamId }) {
     sendMessage, sendTeamMessage, sendChannelMessage,
     activeConversationId, groupConversations,
     openConversation, sendConversationMessage, createGroupConversation,
-    toggleReaction: toggleReactionApi, addNotification
+    toggleReaction: toggleReactionApi, addNotification,
+    wsStatus,
   } = useMessages();
   const { t } = useTheme();
   const {
@@ -236,6 +237,16 @@ export default function MessagesPage({ dmUserId, teamId }) {
               <span className="text-[15px] font-semibold text-white">general</span>
             </>
           )}
+          <div className="ml-auto flex items-center gap-1.5" title={wsStatus === 'connected' ? 'Real-time' : wsStatus === 'connecting' ? 'Connecting...' : 'Polling'}>
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              wsStatus === 'connected' ? 'bg-green-400' :
+              wsStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+              'bg-kodo-text-dim'
+            }`} />
+            <span className="text-[10px] text-kodo-text-dim hidden sm:inline">
+              {wsStatus === 'connected' ? 'Live' : wsStatus === 'connecting' ? '...' : ''}
+            </span>
+          </div>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-6 py-4">
           <MessageThread

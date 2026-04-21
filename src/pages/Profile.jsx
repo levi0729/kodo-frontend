@@ -61,10 +61,10 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       await usersApi.updateProfile(formData);
-      toast.success(language === 'hu' ? 'Profil mentve' : 'Profile saved');
+      toast.success(t.settings.profileSaved);
       setEditing(false);
     } catch (err) {
-      toast.error(language === 'hu' ? 'Hiba történt' : 'Failed to save');
+      toast.error(err.message || t.settings.profileSaveFailed);
     } finally {
       setSaving(false);
     }

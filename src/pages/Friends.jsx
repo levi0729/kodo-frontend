@@ -118,7 +118,7 @@ export default function FriendsPage({ onNavigate }) {
       toast.success(t.friends.requestAccepted);
       fetchData();
     } catch (err) {
-      toast.error(err.message || 'Failed to accept request');
+      toast.error(err.message || t.friends.acceptFailed);
     } finally {
       setActionLoading(null);
     }
@@ -132,7 +132,7 @@ export default function FriendsPage({ onNavigate }) {
       toast.success(t.friends.declined || 'Request declined');
       fetchData();
     } catch (err) {
-      toast.error(err.message || 'Failed to decline request');
+      toast.error(err.message || t.friends.declineFailed);
     } finally {
       setActionLoading(null);
     }
@@ -147,7 +147,7 @@ export default function FriendsPage({ onNavigate }) {
       toast.success(t.friends.friendRemoved);
       fetchData();
     } catch (err) {
-      toast.error(err.message || 'Failed to remove friend');
+      toast.error(err.message || t.friends.removeFailed);
     } finally {
       setActionLoading(null);
     }
@@ -161,7 +161,7 @@ export default function FriendsPage({ onNavigate }) {
       toast.success(t.friends.requestSent);
       fetchData();
     } catch (err) {
-      toast.error(err.message || 'Failed to send request');
+      toast.error(err.message || t.friends.sendFailed);
     } finally {
       setActionLoading(null);
     }

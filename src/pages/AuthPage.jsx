@@ -76,18 +76,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-kodo-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-kodo-bg flex items-center justify-center p-4 overflow-y-auto">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-500/[0.04] blur-3xl" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-purple-500/[0.04] blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-[420px]">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-[64px] h-[64px] rounded-2xl flex items-center justify-center mb-4">
-            <img src="/kodo.png" alt="Kodo" className="w-[72px] h-[72px] object-contain" />
+      <div className="relative w-full max-w-[420px] my-auto py-6">
+        <div className="flex flex-col items-center mb-6 sm:mb-8">
+          <div className="w-[48px] h-[48px] sm:w-[64px] sm:h-[64px] rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+            <img src="/kodo.png" alt="Kodo" className="w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] object-contain" />
           </div>
-          <h1 className="text-[28px] font-bold text-white font-display tracking-tight">
+          <h1 className="text-[22px] sm:text-[28px] font-bold text-white font-display tracking-tight">
             {mode === 'login' ? a.welcomeTitle : a.joinTitle}
           </h1>
           <p className="text-[14px] text-kodo-text-muted mt-1">
@@ -95,7 +95,7 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 backdrop-blur-sm">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 sm:p-8 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {mode === 'register' && (
               <>

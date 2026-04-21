@@ -111,7 +111,7 @@ export default function ActivityLog() {
 
       setPage(pageNum);
     } catch (err) {
-      toast.error(err.message || 'Failed to load activity logs');
+      toast.error(err.message || t.activityLog.loadFailed);
     } finally {
       setLoading(false);
       setLoadingMore(false);
