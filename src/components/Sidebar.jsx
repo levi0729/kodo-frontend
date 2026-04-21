@@ -209,8 +209,8 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
         </div>
       </div>
 
-      <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </nav>
+      <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </>
   );
 }
