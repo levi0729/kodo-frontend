@@ -128,12 +128,10 @@ async function uploadRequest(endpoint, formData) {
 // ── Auth ──────────────────────────────────────────────────
 
 export const auth = {
-  async login(email, password, deviceToken = null) {
-    const body = { email, password };
-    if (deviceToken) body.device_token = deviceToken;
+  async login(email, password) {
     const data = await request('/auth/login', {
       method: 'POST',
-      body,
+      body: { email, password },
     });
     if (data.token) setToken(data.token);
     return data;
@@ -633,22 +631,6 @@ export const organizations = {
 
   async destroy(id) {
     return request(`/organizations/${id}`, { method: 'DELETE' });
-  },
-};
-
-// ── Verification (2FA) ───────────────────────────────────
-
-export const verification = {
-  async sendCode(userId) {
-    return request('/verification/send', { method: 'POST', body: { user_id: userId } });
-  },
-
-  async verifyCode(userId, code, rememberDevice = false) {
-    return request('/verification/verify', { method: 'POST', body: { user_id: userId, code, remember_device: rememberDevice } });
-  },
-
-  async checkDevice(userId, deviceToken) {
-    return request('/verification/check-device', { method: 'POST', body: { user_id: userId, device_token: deviceToken } });
   },
 };
 

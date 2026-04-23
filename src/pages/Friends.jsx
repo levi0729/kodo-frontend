@@ -29,9 +29,9 @@ export default function FriendsPage({ onNavigate }) {
         friendsApi.pending().catch(() => ({ data: [] })),
         friendsApi.sent().catch(() => ({ data: [] })),
       ]);
-      setFriendsList(friendsRes.friends || friendsRes.data || []);
-      setPendingList(pendingRes.friends || pendingRes.data || []);
-      setSentList(sentRes.friends || sentRes.data || []);
+      setFriendsList(friendsRes.friends || []);
+      setPendingList(pendingRes.pending_requests || []);
+      setSentList(sentRes.sent_requests || []);
       invalidateCache('friends');
     } catch {
       // errors already handled per-request
@@ -47,20 +47,18 @@ export default function FriendsPage({ onNavigate }) {
   // Derive IDs of users that are already friends, pending, or sent
   const connectedUserIds = useMemo(() => {
     const ids = new Set();
+    // friendsList contains user objects directly
     friendsList.forEach(f => {
-      ids.add(f.friend_id || f.user_id || f.id);
-      if (f.user) ids.add(f.user.id);
-      if (f.friend) ids.add(f.friend.id);
+      if (f.id) ids.add(f.id);
     });
+    // pendingList/sentList contain FriendResource with user_one/user_two
     pendingList.forEach(f => {
-      ids.add(f.sender_id || f.user_id || f.id);
-      if (f.user) ids.add(f.user.id);
-      if (f.sender) ids.add(f.sender.id);
+      if (f.user_one) ids.add(f.user_one.id);
+      if (f.user_two) ids.add(f.user_two.id);
     });
     sentList.forEach(f => {
-      ids.add(f.receiver_id || f.friend_id || f.user_id || f.id);
-      if (f.user) ids.add(f.user.id);
-      if (f.receiver) ids.add(f.receiver.id);
+      if (f.user_one) ids.add(f.user_one.id);
+      if (f.user_two) ids.add(f.user_two.id);
     });
     // Remove self
     if (currentUser?.id) ids.delete(currentUser.id);
@@ -68,29 +66,19 @@ export default function FriendsPage({ onNavigate }) {
   }, [friendsList, pendingList, sentList, currentUser]);
 
   // Helper to extract the "other user" from a friendship record
+  // Friends list returns user objects directly (with friend_record_id attached)
   const getFriendUser = (record) => {
-    if (record.friend) return record.friend;
-    if (record.user) return record.user;
-    // Fallback: look up from allUsers
-    const otherId = record.friend_id || record.user_id;
-    if (otherId) return allUsers.find(u => u.id === otherId) || null;
     return record;
   };
 
+  // For pending (received) requests: sender is user_one
   const getSenderUser = (record) => {
-    if (record.sender) return record.sender;
-    if (record.user) return record.user;
-    const otherId = record.sender_id || record.user_id;
-    if (otherId) return allUsers.find(u => u.id === otherId) || null;
-    return record;
+    return record.user_one || null;
   };
 
+  // For sent requests: receiver is user_two
   const getReceiverUser = (record) => {
-    if (record.receiver) return record.receiver;
-    if (record.user) return record.user;
-    const otherId = record.receiver_id || record.friend_id || record.user_id;
-    if (otherId) return allUsers.find(u => u.id === otherId) || null;
-    return record;
+    return record.user_two || null;
   };
 
   // Filtered users for "Find Friends" tab
@@ -141,9 +129,10 @@ export default function FriendsPage({ onNavigate }) {
   const handleRemove = async (record) => {
     if (actionLoading) return;
     if (!confirm(t.friends.confirmRemove)) return;
-    setActionLoading(record.id);
+    const recordId = record.friend_record_id || record.id;
+    setActionLoading(recordId);
     try {
-      await friendsApi.remove(record.id);
+      await friendsApi.remove(recordId);
       toast.success(t.friends.friendRemoved);
       fetchData();
     } catch (err) {
@@ -250,10 +239,10 @@ export default function FriendsPage({ onNavigate }) {
                     </button>
                     <button
                       onClick={() => handleRemove(record)}
-                      disabled={actionLoading === record.id}
+                      disabled={actionLoading === (record.friend_record_id || record.id)}
                       className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {actionLoading === record.id ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />}
+                      {actionLoading === (record.friend_record_id || record.id) ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />}
                       {t.friends.remove}
                     </button>
                   </div>

@@ -3,7 +3,6 @@ import { Eye, EyeOff, LogIn, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
-import VerificationScreen from './VerificationScreen';
 import ForgotPasswordScreen from './ForgotPasswordScreen';
 
 export default function AuthPage() {
@@ -17,15 +16,10 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [error, setError] = useState('');
-  const { login, register, loading, verificationPending } = useAuth();
+  const { login, register, loading } = useAuth();
   const { t } = useTheme();
   const toast = useToast();
   const a = t.auth;
-
-  // Show verification screen if 2FA is pending
-  if (verificationPending) {
-    return <VerificationScreen />;
-  }
 
   if (showForgot) {
     return <ForgotPasswordScreen onBack={() => setShowForgot(false)} />;
@@ -39,10 +33,7 @@ export default function AuthPage() {
       const result = await login(email, password);
       if (result.success) {
         toast.success(a.loginSuccess);
-      } else if (result.verificationRequired) {
-        // Verification screen will render automatically
       } else {
-        // Inline error box below the form already shows this — no toast needed.
         setError(result.error);
       }
     } else {

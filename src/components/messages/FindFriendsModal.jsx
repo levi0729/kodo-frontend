@@ -21,7 +21,7 @@ export default function FindFriendsModal({ friendIds, pendingRequests, setPendin
   // Load sent requests
   useEffect(() => {
     friendsApi.sent().then(res => {
-      setSentList(res.friends || res.data || []);
+      setSentList(res.sent_requests || []);
     }).catch(() => {});
   }, []);
 
@@ -47,7 +47,7 @@ export default function FindFriendsModal({ friendIds, pendingRequests, setPendin
       await friendsApi.sendRequest(userId);
       setSentRequests(prev => new Set([...prev, userId]));
       // Refresh sent list
-      friendsApi.sent().then(res => setSentList(res.friends || res.data || [])).catch(() => {});
+      friendsApi.sent().then(res => setSentList(res.sent_requests || [])).catch(() => {});
     } catch { /* already sent or already friends */ }
     setActionLoading(null);
   };
@@ -214,7 +214,7 @@ export default function FindFriendsModal({ friendIds, pendingRequests, setPendin
                 </div>
               ) : (
                 sentList.map(record => {
-                  const user = record.receiver || record.user;
+                  const user = record.user_two || record.receiver || record.user;
                   if (!user) return null;
                   return (
                     <div key={record.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.03] opacity-70">
