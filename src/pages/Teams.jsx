@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil, Hash, Megaphone, X } from 'lucide-react';
+import { Plus, Lock, Globe, Users, MessageSquare, UserPlus, Loader2, LogOut, Trash2, Pencil, Hash, Megaphone, X, FolderKanban } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import { useProject } from '@/context/ProjectContext';
 import { teams as teamsApi, participants as participantsApi, channels as channelsApi } from '@/services/api';
@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import NewTeamModal from '@/components/NewTeamModal';
 import TeamMemberPopup from '@/components/TeamMemberPopup';
+import CreateProjectModal from '@/components/CreateProjectModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppData } from '@/context/AppDataContext';
 
@@ -193,6 +194,7 @@ export default function TeamsPage({ onNavigate }) {
   const [showAddMember, setShowAddMember] = useState(null);
   const [editingTeam, setEditingTeam] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', description: '', color: '' });
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const { currentUser } = useAuth();
   const toast = useToast();
   const [teams, setTeams] = useState([]);
@@ -300,6 +302,28 @@ export default function TeamsPage({ onNavigate }) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  if (userProjects.length === 0) {
+    return (
+      <div className="pb-6 md:pb-10">
+        <div className="mb-4 md:mb-7">
+          <h1 className="text-[20px] md:text-[28px] font-bold text-white/95 font-display m-0">{t.teamsPage.title}</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4">
+            <FolderKanban size={28} className="text-kodo-text-dim" />
+          </div>
+          <div className="text-[15px] font-semibold text-white mb-1">{t.teamsPage.needProjectTitle}</div>
+          <div className="text-[13px] text-kodo-text-muted mb-4">{t.teamsPage.needProjectDesc}</div>
+          <button onClick={() => setShowCreateProjectModal(true)} className="kodo-btn-primary">
+            <Plus size={16} />
+            {t.teamsPage.createProjectBtn}
+          </button>
+        </div>
+        <CreateProjectModal isOpen={showCreateProjectModal} onClose={() => setShowCreateProjectModal(false)} />
       </div>
     );
   }

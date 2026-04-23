@@ -63,12 +63,12 @@ async function request(endpoint, options = {}) {
 
   if (!res.ok) {
     let message;
-    if (data?.error?.message) {
+    if (data?.errors && Object.keys(data.errors).length > 0) {
+      message = Object.values(data.errors).flat().join(', ');
+    } else if (data?.error?.message) {
       message = data.error.message;
     } else if (data?.message) {
       message = data.message;
-    } else if (data?.errors) {
-      message = Object.values(data.errors).flat().join(', ');
     } else {
       message = `Something went wrong (code ${res.status}). Please try again.`;
     }

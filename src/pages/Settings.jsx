@@ -282,7 +282,6 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-5">
           {[
             { label: s.pushNotif, desc: s.pushNotifDesc, key: 'push_notifications' },
-            { label: s.desktopNotif, desc: s.desktopNotifDesc, key: 'desktop_notifications' },
             { label: s.notifSound, desc: s.notifSoundDesc, key: 'notification_sound' },
             { label: s.dndMode, desc: s.dndModeDesc, key: 'dnd_enabled' },
           ].map(item => (
@@ -334,7 +333,6 @@ export default function SettingsPage() {
           {[
             { label: s.enterToSend, desc: s.enterToSendDesc, key: 'enter_to_send' },
             { label: s.typingIndicator, desc: s.typingIndicatorDesc, key: 'show_typing_indicator' },
-            { label: s.readReceipts, desc: s.readReceiptsDesc, key: 'show_read_receipts' },
           ].map(item => (
             <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>

@@ -79,6 +79,11 @@ html.light {
 body { margin: 0; }
 input, textarea, button { font-family: 'DM Sans', system-ui, sans-serif; }
 
+/* Hide browser-native password reveal button (Edge, Chrome) */
+input::-ms-reveal,
+input::-ms-clear { display: none; }
+input::-webkit-credentials-auto-fill-button { display: none !important; }
+
 /* Component Layer */
 
 @layer components {

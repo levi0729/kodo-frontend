@@ -171,6 +171,9 @@ export default function AuthPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {mode === 'register' && (
+                <p className="text-[11px] text-kodo-text-dim mt-1 mb-0">{a.passwordHint}</p>
+              )}
               {mode === 'login' && (
                 <div className="text-right -mt-2">
                   <button
