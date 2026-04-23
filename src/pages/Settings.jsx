@@ -44,9 +44,6 @@ function SegmentedControl({ value, options, onChange }) {
 }
 
 const DEFAULT_SETTINGS = {
-  push_notifications: true,
-  email_notifications: true,
-  desktop_notifications: false,
   notification_sound: true,
   dnd_enabled: false,
   dnd_start_time: '',
@@ -281,7 +278,6 @@ export default function SettingsPage() {
         <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.notifications}</h3>
         <div className="flex flex-col gap-5">
           {[
-            { label: s.pushNotif, desc: s.pushNotifDesc, key: 'push_notifications' },
             { label: s.notifSound, desc: s.notifSoundDesc, key: 'notification_sound' },
             { label: s.dndMode, desc: s.dndModeDesc, key: 'dnd_enabled' },
           ].map(item => (

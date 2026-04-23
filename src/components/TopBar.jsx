@@ -19,32 +19,46 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
   const [notifLoading, setNotifLoading] = useState(false);
   const [usersCache, setUsersCache] = useState({});
 
+  // Fetch notifications on mount and poll every 15 seconds
   useEffect(() => {
     let cancelled = false;
     async function fetchNotifs() {
-      setNotifLoading(true);
       try {
         const data = await notificationsApi.list();
         if (!cancelled) setApiNotifications(data.notifications || data.data || []);
       } catch {}
       if (!cancelled) setNotifLoading(false);
     }
+    setNotifLoading(true);
     fetchNotifs();
-    return () => { cancelled = true; };
+    const interval = setInterval(fetchNotifs, 15000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  const getUserById = (id) => usersCache[id] || null;
+  const getUserById = (id) => {
+    if (usersCache[id]) return usersCache[id];
+    // Check if any API notification has the actor loaded
+    const notif = apiNotifications.find(n => n.actor_id === id && n.actor);
+    return notif?.actor || null;
+  };
 
   useEffect(() => {
+    // Build cache from API notification actors
+    const cache = { ...usersCache };
+    apiNotifications.forEach(n => {
+      if (n.actor && n.actor.id) cache[n.actor.id] = n.actor;
+    });
     const ids = [...new Set([
       ...mentionNotifs.map(n => n.actor_id),
       ...apiNotifications.map(n => n.actor_id),
     ].filter(Boolean))];
-    const missing = ids.filter(id => !usersCache[id]);
-    if (missing.length === 0) return;
+    const missing = ids.filter(id => !cache[id]);
+    if (missing.length === 0) {
+      setUsersCache(cache);
+      return;
+    }
     Promise.all(missing.map(id => usersApi.show(id).catch(() => null)))
       .then(results => {
-        const cache = { ...usersCache };
         results.forEach(r => {
           const user = r?.user || r?.data;
           if (user) cache[user.id] = user;

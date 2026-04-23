@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Hash, ChevronLeft, Loader2, Lock, Megaphone, Users } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import ChannelSidebar from '@/components/messages/ChannelSidebar';
@@ -10,17 +10,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useMessages } from '@/context/MessagesContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppData } from '@/context/AppDataContext';
-import { channels as channelsApi } from '@/services/api';
+import { channels as channelsApi, chat as chatApi } from '@/services/api';
 
 export default function MessagesPage({ dmUserId, teamId }) {
   const { currentUser } = useAuth();
   const {
-    messages, messagesLoading,
+    messages, messagesLoading, activeRoomId,
     openDM, openTeamRoom, openChannel, activeChannelId,
     sendMessage, sendTeamMessage, sendChannelMessage,
     activeConversationId, groupConversations,
     openConversation, sendConversationMessage, createGroupConversation,
-    toggleReaction: toggleReactionApi, addNotification,
+    toggleReaction: toggleReactionApi,
     wsStatus,
   } = useMessages();
   const { t } = useTheme();
@@ -39,6 +39,34 @@ export default function MessagesPage({ dmUserId, teamId }) {
   const [showFindFriends, setShowFindFriends] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [teamChannels, setTeamChannels] = useState([]);
+  const [typingUsers, setTypingUsers] = useState([]);
+
+  // Typing indicator - poll who's typing in the current room
+  const typingPollRef = useRef(null);
+  useEffect(() => {
+    if (typingPollRef.current) clearInterval(typingPollRef.current);
+    setTypingUsers([]);
+    if (!activeRoomId) return;
+    const poll = () => {
+      chatApi.getTypingStatus(activeRoomId)
+        .then(data => setTypingUsers(data.typing_user_ids || []))
+        .catch(() => {});
+    };
+    poll();
+    typingPollRef.current = setInterval(poll, 3000);
+    return () => clearInterval(typingPollRef.current);
+  }, [activeRoomId]);
+
+  const handleTyping = useCallback(() => {
+    if (activeRoomId) {
+      chatApi.sendTyping(activeRoomId).catch(() => {});
+    }
+  }, [activeRoomId]);
+
+  const typingUserNames = typingUsers
+    .map(id => allUsers.find(u => u.id === id))
+    .filter(Boolean)
+    .map(u => u.display_name);
 
   // Fetch channels when active team changes
   useEffect(() => {
@@ -132,22 +160,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
         await sendTeamMessage(activeTeamId, msgText, fileList);
       }
     } catch { /* handled by context */ }
-    // Process mention notifications
-    const mentionedUsers = allUsers.filter(u => {
-      if (u.id === currentUser.id) return false;
-      if (!u.display_name) return false;
-      return msgText.toLowerCase().includes('@' + u.display_name.toLowerCase());
-    });
-    for (const mentionedUser of mentionedUsers) {
-      addNotification({
-        notification_type: 'mention',
-        actor_id: currentUser.id,
-        target_user_id: mentionedUser.id,
-        title: t.messagesPage.mentioned.replace('{name}', currentUser.display_name),
-        body: msgText.length > 60 ? msgText.slice(0, 60) + '...' : msgText,
-      });
-    }
-  }, [activeDmUserId, activeConversationId, activeChannelId, activeTeamId, sendMessage, sendConversationMessage, sendChannelMessage, sendTeamMessage, allUsers, currentUser, addNotification, t]);
+  }, [activeDmUserId, activeConversationId, activeChannelId, activeTeamId, sendMessage, sendConversationMessage, sendChannelMessage, sendTeamMessage]);
 
   // Determine header info
   const renderChannelIcon = (type, size = 17) => {
@@ -261,6 +274,23 @@ export default function MessagesPage({ dmUserId, teamId }) {
             toggleReaction={toggleReaction}
           />
         </div>
+        {typingUserNames.length > 0 && (
+          <div className="px-3 md:px-6 py-1">
+            <div className="flex items-center gap-2 text-[12px] text-kodo-text-muted animate-pulse">
+              <div className="flex gap-0.5">
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>
+                {typingUserNames.length === 1
+                  ? `${typingUserNames[0]} ${t.messagesPage.isTyping || 'is typing...'}`
+                  : `${typingUserNames.join(', ')} ${t.messagesPage.areTyping || 'are typing...'}`
+                }
+              </span>
+            </div>
+          </div>
+        )}
         <ComposeBox
           activeDmUserId={activeDmUserId}
           dmUser={dmUser}
@@ -270,6 +300,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
           allUsers={allUsers}
           currentUser={currentUser}
           onSend={handleSend}
+          onTyping={handleTyping}
         />
       </div>
 

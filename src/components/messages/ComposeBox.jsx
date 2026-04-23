@@ -3,7 +3,7 @@ import { Send, Paperclip, AtSign, X, FileText } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, activeConversation, allUsers, currentUser, onSend }) {
+export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, activeConversation, allUsers, currentUser, onSend, onTyping }) {
   const { t } = useTheme();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -21,7 +21,10 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
     };
   }, []);
 
-  const mentionMembers = allUsers.filter(u => u.id !== currentUser?.id);
+  // In DM: only allow mentioning the other person. In group/team: all users except self.
+  const mentionMembers = activeDmUserId
+    ? allUsers.filter(u => u.id === activeDmUserId)
+    : allUsers.filter(u => u.id !== currentUser?.id);
   const filteredMentionMembers = mentionFilter
     ? mentionMembers.filter(u => {
         const filter = mentionFilter.toLowerCase();
@@ -53,9 +56,19 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
     });
   };
 
+  // Throttle typing events - send at most once per 3 seconds
+  const lastTypingRef = useRef(0);
   const handleInputChange = (e) => {
     const val = e.target.value;
     setMessage(val);
+    // Send typing event
+    if (onTyping && val.length > 0) {
+      const now = Date.now();
+      if (now - lastTypingRef.current > 3000) {
+        lastTypingRef.current = now;
+        onTyping();
+      }
+    }
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = val.slice(0, cursorPos);
     const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);

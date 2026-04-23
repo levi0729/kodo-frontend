@@ -385,6 +385,14 @@ export const chat = {
     return request(`/chat/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } });
   },
 
+  async sendTyping(roomId) {
+    return request('/chat/typing', { method: 'POST', body: { room_id: roomId } });
+  },
+
+  async getTypingStatus(roomId) {
+    return request(`/chat/rooms/${roomId}/typing`);
+  },
+
   async sendWithAttachments({ receiverId, teamId, message, attachments }) {
     const body = { message: message || '' };
     if (teamId) body.team_id = teamId;
