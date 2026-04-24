@@ -12,13 +12,6 @@ const PROJECT_COLORS = [
   '#f97316', '#06b6d4', '#8b5cf6', '#10b981',
 ];
 
-const PROJECT_TYPES = [
-  { key: 'kanban', label: 'Kanban' },
-  { key: 'list', label: 'List' },
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'calendar', label: 'Calendar' },
-];
-
 const PROJECT_STATUSES = [
   { key: 'planning', label: { hu: 'Tervezés', en: 'Planning' } },
   { key: 'active', label: { hu: 'Aktív', en: 'Active' } },
@@ -35,7 +28,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
     name: '',
     description: '',
     color: PROJECT_COLORS[0],
-    project_type: 'kanban',
+
     status: 'active',
     start_date: '',
     target_end_date: '',
@@ -49,7 +42,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
       name: '',
       description: '',
       color: PROJECT_COLORS[0],
-      project_type: 'kanban',
+  
       status: 'active',
       start_date: '',
       target_end_date: '',
@@ -70,7 +63,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
         color: form.color,
-        project_type: form.project_type,
+        project_type: 'kanban',
         status: form.status,
         start_date: form.start_date || undefined,
         target_end_date: form.target_end_date || undefined,
@@ -162,49 +155,26 @@ export default function CreateProjectModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Type + Status row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-kodo-text-dim uppercase tracking-[0.05em] mb-1.5">
-                {sb.projectType}
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {PROJECT_TYPES.map(pt => (
-                  <button
-                    key={pt.key}
-                    onClick={() => update('project_type', pt.key)}
-                    className={clsx(
-                      'px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-all border',
-                      form.project_type === pt.key
-                        ? 'bg-kodo-accent/10 border-kodo-accent/30 text-indigo-400'
-                        : 'bg-transparent border-white/[0.08] text-kodo-text-dim hover:text-kodo-text-secondary'
-                    )}
-                  >
-                    {pt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-kodo-text-dim uppercase tracking-[0.05em] mb-1.5">
-                {sb.projectStatus}
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {PROJECT_STATUSES.map(ps => (
-                  <button
-                    key={ps.key}
-                    onClick={() => update('status', ps.key)}
-                    className={clsx(
-                      'px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-all border',
-                      form.status === ps.key
-                        ? 'bg-kodo-accent/10 border-kodo-accent/30 text-indigo-400'
-                        : 'bg-transparent border-white/[0.08] text-kodo-text-dim hover:text-kodo-text-secondary'
-                    )}
-                  >
-                    {ps.label[language] || ps.label.en}
-                  </button>
-                ))}
-              </div>
+          {/* Status */}
+          <div>
+            <label className="block text-[11px] font-medium text-kodo-text-dim uppercase tracking-[0.05em] mb-1.5">
+              {sb.projectStatus}
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {PROJECT_STATUSES.map(ps => (
+                <button
+                  key={ps.key}
+                  onClick={() => update('status', ps.key)}
+                  className={clsx(
+                    'px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-all border',
+                    form.status === ps.key
+                      ? 'bg-kodo-accent/10 border-kodo-accent/30 text-indigo-400'
+                      : 'bg-transparent border-white/[0.08] text-kodo-text-dim hover:text-kodo-text-secondary'
+                  )}
+                >
+                  {ps.label[language] || ps.label.en}
+                </button>
+              ))}
             </div>
           </div>
 

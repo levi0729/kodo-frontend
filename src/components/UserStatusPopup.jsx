@@ -13,7 +13,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function UserStatusPopup({ onClose, onNavigate }) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, updateUser } = useAuth();
   const { t } = useTheme();
 
   return (
@@ -43,7 +43,7 @@ export default function UserStatusPopup({ onClose, onNavigate }) {
               key={opt.key}
               onClick={() => {
                 usersApi.updateStatus(opt.key).catch(() => {});
-                if (currentUser) currentUser.presence_status = opt.key;
+                updateUser({ presence_status: opt.key });
                 onClose();
               }}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium cursor-pointer border transition-all ${

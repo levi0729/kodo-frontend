@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import {
-  User, Mail, Briefcase, Building2, CheckCircle2, Clock, FolderKanban,
-  TrendingUp, Edit3, Save, X, Loader2, Camera
+  User, Mail, Building2, CheckCircle2, Clock, FolderKanban,
+  TrendingUp, Edit3, Loader2
 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import ProgressBar from '@/components/ProgressBar';
@@ -12,7 +13,12 @@ import { users as usersApi, timeEntries as timeEntriesApi } from '@/services/api
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 
-export default function ProfilePage() {
+function isAssignedTo(task, userId) {
+  return (task.assignees || []).some(a => (a.id ?? a) === userId);
+}
+
+export default function ProfilePage({ onNavigate }) {
+  const { userId: paramUserId } = useParams();
   const { currentUser } = useAuth();
   const { userProjects } = useProject();
   const { tasks } = useTasks();
@@ -20,26 +26,30 @@ export default function ProfilePage() {
   const toast = useToast();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
 
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const isOwnProfile = !paramUserId || Number(paramUserId) === currentUser?.id;
+  const [profileUser, setProfileUser] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   const [totalHours, setTotalHours] = useState(0);
-  const [formData, setFormData] = useState({
-    display_name: '',
-    job_title: '',
-    department: '',
-  });
 
+  // Load other user's profile if viewing someone else
   useEffect(() => {
-    if (currentUser) {
-      setFormData({
-        display_name: currentUser.display_name || '',
-        job_title: currentUser.job_title || '',
-        department: currentUser.department || '',
-      });
+    if (isOwnProfile) {
+      setProfileUser(null);
+      return;
     }
-  }, [currentUser]);
+    setProfileLoading(true);
+    usersApi.show(paramUserId)
+      .then(data => setProfileUser(data.user || data.data || data))
+      .catch(() => setProfileUser(null))
+      .finally(() => setProfileLoading(false));
+  }, [paramUserId, isOwnProfile]);
+
+  const displayUser = isOwnProfile ? currentUser : profileUser;
+  const displayUserId = displayUser?.id;
 
   useEffect(() => {
+    if (!displayUserId) return;
     timeEntriesApi.list({ per_page: 999 })
       .then(data => {
         const entries = data.time_entries || data.data || [];
@@ -47,31 +57,19 @@ export default function ProfilePage() {
         setTotalHours(Math.round(hours * 10) / 10);
       })
       .catch(() => {});
-  }, []);
+  }, [displayUserId]);
 
   const myTasks = useMemo(() => {
-    return tasks.filter(t => (t.assignees || []).includes(currentUser?.id));
-  }, [tasks, currentUser]);
+    if (!displayUserId) return [];
+    return tasks.filter(t => isAssignedTo(t, displayUserId) || t.created_by === displayUserId);
+  }, [tasks, displayUserId]);
 
   const completedTasks = myTasks.filter(t => t.status === 'done').length;
   const inProgressTasks = myTasks.filter(t => t.status === 'in_progress').length;
   const completionRate = myTasks.length > 0 ? Math.round((completedTasks / myTasks.length) * 100) : 0;
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await usersApi.updateProfile(formData);
-      toast.success(t.settings.profileSaved);
-      setEditing(false);
-    } catch (err) {
-      toast.error(err.message || t.settings.profileSaveFailed);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const joinDate = currentUser?.created_at
-    ? new Date(currentUser.created_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
+  const joinDate = displayUser?.created_at
+    ? new Date(displayUser.created_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
   const stats = [
@@ -101,10 +99,31 @@ export default function ProfilePage() {
     },
   ];
 
-  if (!currentUser) {
+  if (!displayUser && !profileLoading) {
+    if (!currentUser) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        </div>
+      );
+    }
+  }
+
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  if (!displayUser) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <User size={32} className="text-kodo-text-dim mb-3" />
+        <div className="text-[14px] text-kodo-text-muted">
+          {language === 'hu' ? 'Felhasználó nem található' : 'User not found'}
+        </div>
       </div>
     );
   }
@@ -116,7 +135,10 @@ export default function ProfilePage() {
           {language === 'hu' ? 'Profil' : 'Profile'}
         </h1>
         <p className="text-kodo-text-muted mt-1 text-[13px]">
-          {language === 'hu' ? 'Személyes adatok és statisztikák' : 'Personal info and statistics'}
+          {isOwnProfile
+            ? (language === 'hu' ? 'Személyes adatok és statisztikák' : 'Personal info and statistics')
+            : displayUser.display_name
+          }
         </p>
       </div>
 
@@ -126,24 +148,21 @@ export default function ProfilePage() {
 
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="relative group">
-            <Avatar user={currentUser} size={80} />
-            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-              <Camera size={20} className="text-white" />
-            </div>
+            <Avatar user={displayUser} size={80} showStatus />
           </div>
 
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-[20px] font-bold text-white">{currentUser.display_name}</h2>
-            <p className="text-[13px] text-kodo-text-muted mt-0.5">{currentUser.job_title || (language === 'hu' ? 'Nincs pozíció' : 'No position')}</p>
+            <h2 className="text-[20px] font-bold text-white">{displayUser.display_name}</h2>
+            <p className="text-[13px] text-kodo-text-muted mt-0.5">{displayUser.job_title || (language === 'hu' ? 'Nincs pozíció' : 'No position')}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-3 text-[12px] text-kodo-text-dim">
               <span className="flex items-center gap-1.5">
                 <Mail size={13} className="text-kodo-text-dim" />
-                {currentUser.email}
+                {displayUser.email}
               </span>
-              {currentUser.department && (
+              {displayUser.department && (
                 <span className="flex items-center gap-1.5">
                   <Building2 size={13} className="text-kodo-text-dim" />
-                  {currentUser.department}
+                  {displayUser.department}
                 </span>
               )}
             </div>
@@ -154,76 +173,18 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <button
-            onClick={() => setEditing(!editing)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-secondary text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors"
-          >
-            <Edit3 size={13} />
-            {language === 'hu' ? 'Szerkesztés' : 'Edit'}
-          </button>
+          {isOwnProfile && (
+            <button
+              onClick={() => onNavigate('settings')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-secondary text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors"
+            >
+              <Edit3 size={13} />
+              {language === 'hu' ? 'Szerkesztés' : 'Edit'}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Edit Form */}
-      {editing && (
-        <div className="kodo-card p-5 md:p-6 mb-4 md:mb-6 animate-fade-in-up">
-          <h3 className="text-[15px] font-semibold text-white mb-4">
-            {language === 'hu' ? 'Profil szerkesztése' : 'Edit Profile'}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-[12px] font-medium text-kodo-text-muted mb-1.5">
-                {t.settings.displayName}
-              </label>
-              <input
-                type="text"
-                value={formData.display_name}
-                onChange={e => setFormData(p => ({ ...p, display_name: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-kodo-text-muted mb-1.5">
-                {t.settings.position}
-              </label>
-              <input
-                type="text"
-                value={formData.job_title}
-                onChange={e => setFormData(p => ({ ...p, job_title: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-kodo-text-muted mb-1.5">
-                {t.settings.department}
-              </label>
-              <input
-                type="text"
-                value={formData.department}
-                onChange={e => setFormData(p => ({ ...p, department: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => setEditing(false)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-muted text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors"
-            >
-              <X size={13} />
-              {t.common.cancel}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-500 text-white text-[12px] font-medium cursor-pointer hover:bg-indigo-600 transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-              {t.common.save}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
@@ -265,7 +226,7 @@ export default function ProfilePage() {
         </h3>
         <div className="flex flex-col gap-3">
           {userProjects.map(p => {
-            const pTasks = tasks.filter(t => (t.assignees || []).includes(currentUser?.id) && t.project_id === p.id);
+            const pTasks = tasks.filter(t => (isAssignedTo(t, displayUserId) || t.created_by === displayUserId) && t.project_id === p.id);
             const done = pTasks.filter(t => t.status === 'done').length;
             const pct = pTasks.length > 0 ? Math.round((done / pTasks.length) * 100) : 0;
             return (

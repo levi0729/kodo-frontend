@@ -280,11 +280,13 @@ export function MessagesProvider({ children }) {
         if (pollRef.current) clearInterval(pollRef.current);
       } else {
         startPolling();
+        // Refresh messages when tab becomes visible again to sync reactions
+        if (activeRoomId) fetchMessages(activeRoomId);
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [startPolling]);
+  }, [startPolling, activeRoomId, fetchMessages]);
 
   // ── Send message ────────────────────────────────────────
 

@@ -92,6 +92,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateUser = useCallback((updates) => {
+    setCurrentUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      sessionStorage.setItem('kodo_user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const data = await authApi.me();
@@ -114,6 +123,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       currentUser,
+      updateUser,
       login,
       register,
       logout,

@@ -6,11 +6,11 @@ import { useMessages } from '@/context/MessagesContext';
 import { notifications as notificationsApi, users as usersApi } from '@/services/api';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
+export default function TopBar({ activePage, onMenuToggle, onSearchOpen, onNavigate }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const { activeProject } = useProject();
-  const { notifications: mentionNotifs, markAllNotificationsRead } = useMessages();
+  const { notifications: mentionNotifs, markAllNotificationsRead, markNotificationRead } = useMessages();
   const { t } = useTheme();
   const dropdownRef = useRef(null);
   const prevCountRef = useRef(mentionNotifs.length);
@@ -69,9 +69,41 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
 
   const allNotifications = [
     ...mentionNotifs.map(n => ({ ...n, source: 'mention' })),
-    ...apiNotifications.map(n => ({ ...n, source: 'system' })),
+    ...apiNotifications.filter(n => !n.is_read).map(n => ({ ...n, source: 'system' })),
   ];
   const unread = allNotifications.filter(n => !n.is_read).length;
+
+  const handleNotificationClick = (n) => {
+    // Mark as read
+    if (n.source === 'mention') {
+      markNotificationRead(n.id);
+    } else if (n.source === 'system' && n.id) {
+      notificationsApi.markAsRead(n.id).catch(() => {});
+      setApiNotifications(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x));
+    }
+    setNotifOpen(false);
+
+    // Navigate based on action_url or notification type
+    if (onNavigate) {
+      const url = n.action_url || '';
+      if (url.includes('/messages') || n.notification_type === 'message' || n.source === 'mention') {
+        const params = {};
+        const roomMatch = url.match(/room=(\d+)/);
+        const dmMatch = url.match(/dmUserId=(\d+)/);
+        if (roomMatch) params.teamId = roomMatch[1];
+        if (dmMatch) params.dmUserId = dmMatch[1];
+        onNavigate('messages', params);
+      } else if (url.includes('/tasks') || n.notification_type === 'task') {
+        onNavigate('task');
+      } else if (url.includes('/teams') || n.notification_type === 'team') {
+        onNavigate('teams');
+      } else if (n.notification_type === 'project') {
+        onNavigate('dashboard');
+      } else {
+        onNavigate('dashboard');
+      }
+    }
+  };
 
   useEffect(() => {
     if (mentionNotifs.length > prevCountRef.current) {
@@ -169,6 +201,7 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen }) {
                   return (
                     <div
                       key={`${n.source}-${n.id}`}
+                      onClick={() => handleNotificationClick(n)}
                       className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/[0.04] ${
                         !n.is_read ? 'bg-indigo-500/[0.04]' : ''
                       }`}

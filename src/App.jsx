@@ -51,6 +51,11 @@ function useAppNavigate() {
   const navigate = useNavigate();
 
   return useCallback((page, context = null) => {
+    // Special case: navigate to another user's profile
+    if (page === 'profile-view' && context?.userId) {
+      navigate(`/profile/${context.userId}`);
+      return;
+    }
     const base = PAGE_ROUTES[page] || '/';
     const params = new URLSearchParams();
     if (context?.teamId) params.set('teamId', context.teamId);
@@ -133,7 +138,7 @@ function AppContent() {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} onSearchOpen={() => setSearchOpen(true)} />
+        <TopBar activePage={activePage} onMenuToggle={() => setMobileMenuOpen(prev => !prev)} onSearchOpen={() => setSearchOpen(true)} onNavigate={handleNavigate} />
 
         <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-4 md:px-8 md:py-6">
           <ErrorBoundary>
@@ -149,7 +154,8 @@ function AppContent() {
                 <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
                 <Route path="/activity" element={<ActivityLogPage />} />
                 <Route path="/organizations" element={<OrganizationsPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile" element={<ProfilePage onNavigate={handleNavigate} />} />
+                <Route path="/profile/:userId" element={<ProfilePage onNavigate={handleNavigate} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

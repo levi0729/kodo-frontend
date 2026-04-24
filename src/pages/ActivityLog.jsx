@@ -89,9 +89,17 @@ export default function ActivityLog() {
         if (!activeProject?.id) {
           setEntries([]);
           setLoading(false);
+          setLoadingMore(false);
           return;
         }
         res = await activityLogsApi.forProject(activeProject.id);
+      }
+
+      if (!res || typeof res !== 'object') {
+        setEntries(append ? entries : []);
+        setLoading(false);
+        setLoadingMore(false);
+        return;
       }
 
       const logs = res.activity_logs || res.data || [];

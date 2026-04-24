@@ -139,53 +139,52 @@ export default function MessageThread({ messages, messagesLoading, activeDmUserI
             }`}>
               {msg.content}
             </div>
-            <div className={`absolute -top-3 ${own ? 'left-0' : 'right-0'} opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-0.5 bg-[#1e1e2e] border border-white/[0.1] rounded-lg px-1 py-0.5 shadow-lg`}>
-              {QUICK_EMOJIS.map(emoji => (
+            <div ref={emojiPickerMsgId === msg.id ? emojiPickerRef : undefined} className={`absolute -top-3 ${own ? 'left-0' : 'right-0'} opacity-0 group-hover:opacity-100 ${emojiPickerMsgId === msg.id ? '!opacity-100' : ''} transition-opacity z-10 flex flex-col items-start bg-[#1e1e2e] border border-white/[0.1] rounded-lg shadow-lg`}>
+              <div className="flex items-center gap-0.5 px-1 py-0.5">
+                {QUICK_EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(msg.id, emoji)}
+                    className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-[14px]"
+                    title={emoji}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+                <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
                 <button
-                  key={emoji}
-                  onClick={() => handleReaction(msg.id, emoji)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-[14px]"
-                  title={emoji}
+                  onClick={() => setEmojiPickerMsgId(emojiPickerMsgId === msg.id ? null : msg.id)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-kodo-text-dim"
+                  title={t.messagesPage.moreEmoji}
                 >
-                  {emoji}
+                  <SmilePlus size={14} />
                 </button>
-              ))}
-              <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
-              <button
-                onClick={() => setEmojiPickerMsgId(emojiPickerMsgId === msg.id ? null : msg.id)}
-                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-kodo-text-dim"
-                title={t.messagesPage.moreEmoji}
-              >
-                <SmilePlus size={14} />
-              </button>
-            </div>
-            {emojiPickerMsgId === msg.id && (
-              <div
-                ref={emojiPickerRef}
-                className={`absolute z-50 ${own ? 'right-0' : 'left-0'} bottom-full mb-2 w-[240px] sm:w-[280px] bg-[#1a1a24] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden animate-fade-in-up`}
-              >
-                <div className="max-h-[240px] overflow-y-auto p-2">
-                  {EMOJI_CATEGORIES.map(cat => (
-                    <div key={cat.label}>
-                      <div className="px-2 py-1.5 text-[10px] font-semibold text-kodo-text-dim uppercase tracking-[0.1em]">
-                        {cat.label}
-                      </div>
-                      <div className="grid grid-cols-8 gap-0.5">
-                        {cat.emojis.map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => handleReaction(msg.id, emoji)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-[16px]"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
-            )}
+              {emojiPickerMsgId === msg.id && (
+                <div className="w-[240px] sm:w-[280px] border-t border-white/[0.08] animate-fade-in-up">
+                  <div className="max-h-[240px] overflow-y-auto p-2">
+                    {EMOJI_CATEGORIES.map(cat => (
+                      <div key={cat.label}>
+                        <div className="px-2 py-1.5 text-[10px] font-semibold text-kodo-text-dim uppercase tracking-[0.1em]">
+                          {cat.label}
+                        </div>
+                        <div className="grid grid-cols-8 gap-0.5">
+                          {cat.emojis.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReaction(msg.id, emoji)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none text-[16px]"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           {msg.attachments?.length > 0 && (
             <div className={`flex flex-wrap gap-2 mt-1.5 ${own ? 'justify-end' : ''}`}>

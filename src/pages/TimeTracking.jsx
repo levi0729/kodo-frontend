@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Square, Trash2, Loader2, Clock, BarChart3, Download } from 'lucide-react';
+import { Play, Square, Trash2, Loader2, Clock, BarChart3, Download, ChevronDown } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
+import { useTasks } from '@/context/TasksContext';
 import { timeEntries as timeEntriesApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { useTheme } from '@/context/ThemeContext';
+
+const TIMER_STORAGE_KEY = 'kodo_timer_state';
 
 function formatElapsed(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -41,16 +44,52 @@ function getDayAbbr(dayIndex) {
 export default function TimeTracking() {
   const { currentUser } = useAuth();
   const { activeProject } = useProject();
+  const { tasks } = useTasks();
   const toast = useToast();
-  const { t } = useTheme();
+  const { t, language } = useTheme();
 
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [description, setDescription] = useState('');
+  const [selectedTaskId, setSelectedTaskId] = useState('');
+  const [taskDropdownOpen, setTaskDropdownOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(null);
   const intervalRef = useRef(null);
+  const taskDropdownRef = useRef(null);
+
+  // Available tasks for the active project
+  const projectTasks = (tasks || []).filter(t => t.status !== 'done');
+  const selectedTask = projectTasks.find(t => t.id === Number(selectedTaskId));
+
+  // Restore timer state from sessionStorage (persists across tab switches and page navigation)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(TIMER_STORAGE_KEY);
+      if (saved) {
+        const { startTime, taskId, projectId } = JSON.parse(saved);
+        if (startTime && Date.now() - startTime < 24 * 60 * 60 * 1000) {
+          startTimeRef.current = startTime;
+          setSelectedTaskId(taskId || '');
+          setIsRunning(true);
+          setElapsed(Math.floor((Date.now() - startTime) / 1000));
+        } else {
+          sessionStorage.removeItem(TIMER_STORAGE_KEY);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Close task dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (taskDropdownRef.current && !taskDropdownRef.current.contains(e.target)) {
+        setTaskDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Load entries on mount
   useEffect(() => {
@@ -60,7 +99,7 @@ export default function TimeTracking() {
   const loadEntries = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { per_page: 100 };
       if (activeProject?.id) params.project_id = activeProject.id;
       const res = await timeEntriesApi.list(params);
       setEntries(res.time_entries || res.data || []);
@@ -71,39 +110,65 @@ export default function TimeTracking() {
     }
   };
 
-  // Timer tick
+  // Timer tick - uses requestAnimationFrame-friendly approach
   useEffect(() => {
     if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }, 1000);
+      const tick = () => {
+        if (startTimeRef.current) {
+          setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+        }
+      };
+      tick();
+      intervalRef.current = setInterval(tick, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning]);
 
+  // Re-sync elapsed when tab becomes visible again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden && isRunning && startTimeRef.current) {
+        setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isRunning]);
+
   const handleStart = () => {
-    startTimeRef.current = Date.now();
+    const now = Date.now();
+    startTimeRef.current = now;
     setElapsed(0);
     setIsRunning(true);
+    sessionStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({
+      startTime: now,
+      taskId: selectedTaskId,
+      projectId: activeProject?.id,
+    }));
   };
 
   const handleStop = async () => {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
+    sessionStorage.removeItem(TIMER_STORAGE_KEY);
 
     const hours = Math.max(0.01, Math.round((elapsed / 3600) * 100) / 100);
-    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const date = new Date().toISOString().slice(0, 10);
+
+    const taskId = selectedTaskId ? Number(selectedTaskId) : undefined;
+    const description = selectedTask?.title || undefined;
 
     try {
       await timeEntriesApi.create({
-        description: description || undefined,
+        description,
         hours,
         date,
         project_id: activeProject?.id || undefined,
+        task_id: taskId,
       });
-      setDescription('');
+      setSelectedTaskId('');
       setElapsed(0);
       await loadEntries();
     } catch (err) {
@@ -206,42 +271,86 @@ export default function TimeTracking() {
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <input
-                type="text"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder={t.timeTracking.description}
-                className="kodo-input flex-1 text-[14px]"
-                disabled={isRunning}
-              />
-
-              {isRunning && (
-                <div className="flex items-center justify-center px-4 py-2 bg-white/[0.04] rounded-lg border border-white/[0.08] font-mono text-[20px] text-indigo-400 font-bold tabular-nums tracking-wider min-w-[130px]">
-                  {formatElapsed(elapsed)}
-                </div>
-              )}
-
-              <button
-                onClick={isRunning ? handleStop : handleStart}
-                className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer border-none transition-all ${
-                  isRunning
-                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                    : 'kodo-btn-primary'
-                }`}
-              >
-                {isRunning ? (
-                  <>
-                    <Square size={14} />
-                    {t.timeTracking.stopTimer}
-                  </>
-                ) : (
-                  <>
-                    <Play size={14} />
-                    {t.timeTracking.startTimer}
-                  </>
+            <div className="flex flex-col gap-3">
+              {/* Task selector dropdown */}
+              <div className="relative" ref={taskDropdownRef}>
+                <button
+                  onClick={() => !isRunning && setTaskDropdownOpen(!taskDropdownOpen)}
+                  disabled={isRunning}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-[13px] text-left border transition-colors ${
+                    isRunning
+                      ? 'bg-white/[0.02] border-white/[0.04] text-kodo-text-dim cursor-not-allowed'
+                      : 'bg-white/[0.04] border-white/[0.08] text-white cursor-pointer hover:bg-white/[0.06]'
+                  }`}
+                >
+                  <span className={selectedTask ? 'text-white' : 'text-kodo-text-muted'}>
+                    {selectedTask
+                      ? selectedTask.title
+                      : (language === 'hu' ? 'Válassz feladatot...' : 'Select a task...')}
+                  </span>
+                  <ChevronDown size={14} className={`text-kodo-text-dim transition-transform ${taskDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {taskDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a24] border border-white/[0.08] rounded-xl py-1 z-50 shadow-2xl animate-fade-in-up max-h-[240px] overflow-y-auto">
+                    {projectTasks.length === 0 ? (
+                      <div className="px-3 py-3 text-[12px] text-kodo-text-dim text-center">
+                        {language === 'hu' ? 'Nincs elérhető feladat' : 'No tasks available'}
+                      </div>
+                    ) : (
+                      projectTasks.map(task => (
+                        <button
+                          key={task.id}
+                          onClick={() => {
+                            setSelectedTaskId(String(task.id));
+                            setTaskDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-left border-none cursor-pointer transition-colors text-[13px] ${
+                            String(task.id) === selectedTaskId
+                              ? 'bg-kodo-accent/10 text-indigo-400'
+                              : 'bg-transparent text-kodo-text-secondary hover:bg-white/[0.04] hover:text-kodo-text'
+                          }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            task.status === 'in_progress' ? 'bg-indigo-400' :
+                            task.status === 'in_review' ? 'bg-yellow-400' :
+                            'bg-gray-500'
+                          }`} />
+                          <span className="truncate">{task.title}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 )}
-              </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {isRunning && (
+                  <div className="flex items-center justify-center px-4 py-2 bg-white/[0.04] rounded-lg border border-white/[0.08] font-mono text-[20px] text-indigo-400 font-bold tabular-nums tracking-wider min-w-[130px]">
+                    {formatElapsed(elapsed)}
+                  </div>
+                )}
+
+                <button
+                  onClick={isRunning ? handleStop : handleStart}
+                  className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer border-none transition-all ${
+                    isRunning
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                      : 'kodo-btn-primary'
+                  }`}
+                >
+                  {isRunning ? (
+                    <>
+                      <Square size={14} />
+                      {t.timeTracking.stopTimer}
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} />
+                      {t.timeTracking.startTimer}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

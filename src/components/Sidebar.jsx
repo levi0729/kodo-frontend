@@ -2,12 +2,13 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Users, FolderKanban, MessageSquare,
   CalendarDays, Settings, ChevronDown,
-  Check, Plus,
+  Check, Plus, Pencil,
   Clock, Activity
 } from 'lucide-react';
 import clsx from 'clsx';
 import Avatar from './Avatar';
 import CreateProjectModal from './CreateProjectModal';
+import EditProjectModal from './EditProjectModal';
 import UserStatusPopup from './UserStatusPopup';
 import { useProject } from '@/context/ProjectContext';
 import { useMessages } from '@/context/MessagesContext';
@@ -39,6 +40,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
   const [collapsed, setCollapsed] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showUserPopup, setShowUserPopup] = useState(false);
   const { activeProject, setActiveProjectId, userProjects } = useProject();
   const { unreadCount } = useMessages();
@@ -100,13 +102,24 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
             <div className="absolute top-full left-3 right-3 mt-1 bg-[#1a1a24] border border-white/[0.08] rounded-xl py-1.5 z-50 shadow-2xl animate-fade-in-up">
               <div className="px-3 py-1.5 flex items-center justify-between">
                 <span className="text-[10px] font-semibold text-kodo-text-dim uppercase tracking-[0.1em]">{t.sidebar.projects}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowCreateModal(true); setProjectDropdownOpen(false); }}
-                  className="w-5 h-5 rounded flex items-center justify-center bg-white/[0.06] hover:bg-kodo-accent/20 hover:text-indigo-400 text-kodo-text-dim transition-colors cursor-pointer border-none"
-                  title={t.sidebar.newProjectTitle}
-                >
-                  <Plus size={12} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {activeProject && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowEditModal(true); setProjectDropdownOpen(false); }}
+                      className="w-5 h-5 rounded flex items-center justify-center bg-white/[0.06] hover:bg-kodo-accent/20 hover:text-indigo-400 text-kodo-text-dim transition-colors cursor-pointer border-none"
+                      title={t.sidebar.editProject || 'Edit project'}
+                    >
+                      <Pencil size={10} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowCreateModal(true); setProjectDropdownOpen(false); }}
+                    className="w-5 h-5 rounded flex items-center justify-center bg-white/[0.06] hover:bg-kodo-accent/20 hover:text-indigo-400 text-kodo-text-dim transition-colors cursor-pointer border-none"
+                    title={t.sidebar.newProjectTitle}
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               </div>
               {userProjects.map(p => (
                 <button
@@ -211,6 +224,7 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
 
     </nav>
       <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      <EditProjectModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} />
     </>
   );
 }

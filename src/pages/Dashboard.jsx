@@ -114,19 +114,35 @@ function MemberPopup({ user, onClose, onNavigate }) {
         </div>
       </div>
 
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-          onNavigate('messages', { dmUserId: user.id });
-        }}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-kodo-accent/15 text-indigo-400 text-[13px] font-medium cursor-pointer border-none hover:bg-kodo-accent/25 transition-colors"
-      >
-        <MessageSquare size={15} />
-        {t.dashboard.sendMessage}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+            onNavigate('messages', { dmUserId: user.id });
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-kodo-accent/15 text-indigo-400 text-[13px] font-medium cursor-pointer border-none hover:bg-kodo-accent/25 transition-colors"
+        >
+          <MessageSquare size={15} />
+          {t.dashboard.sendMessage}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+            onNavigate('profile-view', { userId: user.id });
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.04] text-kodo-text-secondary text-[12px] font-medium cursor-pointer border border-white/[0.08] hover:bg-white/[0.08] transition-colors"
+        >
+          {t.dashboard.viewProfile || 'View Profile'}
+        </button>
+      </div>
     </div>
   );
+}
+
+function isAssignedTo(task, userId) {
+  return (task.assignees || []).some(a => (a.id ?? a) === userId);
 }
 
 /* Dashboard */
@@ -164,13 +180,13 @@ export default function Dashboard({ onNavigate }) {
   }, [activeProject, projectId]);
 
   const myTasks = useMemo(() => {
-    return allTasks.filter(t => (t.assignees || []).includes(currentUser?.id) && t.project_id === projectId);
+    return allTasks.filter(t => t.project_id === projectId && (isAssignedTo(t, currentUser?.id) || t.created_by === currentUser?.id));
   }, [allTasks, projectId, currentUser]);
   const doneTasks = myTasks.filter(t => t.status === 'done');
 
   const userProjectsWithTasks = useMemo(() => {
     return userProjects.map(p => {
-      const pTasks = allTasks.filter(t => (t.assignees || []).includes(currentUser?.id) && t.project_id === p.id);
+      const pTasks = allTasks.filter(t => t.project_id === p.id);
       const totalTasks = pTasks.length;
       const doneCount = pTasks.filter(t => t.status === 'done').length;
       const progress = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
