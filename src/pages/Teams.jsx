@@ -204,12 +204,13 @@ export default function TeamsPage({ onNavigate }) {
   const { allUsers, invalidate: invalidateCache } = useAppData();
 
   useEffect(() => {
+    if (!activeProject?.id) return;
     setTeamsLoading(true);
-    teamsApi.list().catch(() => ({ data: [] })).then((teamsRes) => {
+    teamsApi.list({ project_id: activeProject.id }).catch(() => ({ data: [] })).then((teamsRes) => {
       setTeams(teamsRes.teams || teamsRes.data || []);
       setTeamsLoading(false);
     });
-  }, []);
+  }, [activeProject?.id]);
 
   const getUserById = (id) => allUsers.find(u => u.id === id) || null;
 
