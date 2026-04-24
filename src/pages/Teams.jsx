@@ -216,12 +216,13 @@ export default function TeamsPage({ onNavigate }) {
 
   const handleTeamCreate = async (teamData) => {
     try {
+      const projectId = teamData.project_id || activeProject?.id;
       const res = await teamsApi.create({
         name: teamData.name,
         description: teamData.description,
         color: teamData.color,
         visibility: teamData.visibility,
-        project_id: activeProject?.id || undefined,
+        project_id: projectId,
       });
       const newTeam = res.team || res.data;
       // Add members
@@ -232,8 +233,8 @@ export default function TeamsPage({ onNavigate }) {
           )
         );
       }
-      // Refresh teams
-      const teamsRes = await teamsApi.list().catch(() => ({ teams: [] }));
+      // Refresh teams filtered by active project
+      const teamsRes = await teamsApi.list({ project_id: activeProject?.id }).catch(() => ({ teams: [] }));
       setTeams(teamsRes.teams || teamsRes.data || []);
       toast.success(t.teamsPage.teamCreated || 'Team created!');
     } catch (err) {
@@ -245,7 +246,7 @@ export default function TeamsPage({ onNavigate }) {
     try {
       await participantsApi.add('team', teamId, userId);
       // Refresh teams and invalidate cache so project members update too
-      const teamsRes = await teamsApi.list().catch(() => ({ teams: [] }));
+      const teamsRes = await teamsApi.list({ project_id: activeProject?.id }).catch(() => ({ teams: [] }));
       setTeams(teamsRes.teams || teamsRes.data || []);
       invalidateCache();
       toast.success(t.teamsPage.memberAdded || 'Member added!');
@@ -268,7 +269,7 @@ export default function TeamsPage({ onNavigate }) {
   const handleEditTeam = async (teamId) => {
     try {
       await teamsApi.update(teamId, editForm);
-      const teamsRes = await teamsApi.list().catch(() => ({ teams: [] }));
+      const teamsRes = await teamsApi.list({ project_id: activeProject?.id }).catch(() => ({ teams: [] }));
       setTeams(teamsRes.teams || teamsRes.data || []);
       setEditingTeam(null);
       toast.success(t.teamsPage.teamUpdated);
@@ -575,6 +576,8 @@ export default function TeamsPage({ onNavigate }) {
         onClose={() => setShowNewTeamModal(false)}
         onTeamCreate={handleTeamCreate}
         availableUsers={allUsers}
+        projects={userProjects}
+        activeProjectId={activeProject?.id}
       />
     </div>
   );

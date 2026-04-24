@@ -4,9 +4,9 @@ import Avatar from '@/components/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableUsers }) {
+export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableUsers, projects, activeProjectId }) {
   const { currentUser } = useAuth();
-  const { t } = useTheme();
+  const { t, language } = useTheme();
   const m = t.newTeamModal;
 
   const [formData, setFormData] = useState({
@@ -15,7 +15,8 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
     visibility: 'public',
     password: '',
     color: '#6366f1',
-    selectedMembers: []
+    selectedMembers: [],
+    project_id: activeProjectId || null,
   });
 
   const [errors, setErrors] = useState({});
@@ -78,7 +79,8 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
         visibility: 'public',
         password: '',
         color: '#6366f1',
-        selectedMembers: []
+        selectedMembers: [],
+        project_id: activeProjectId || null,
       });
       setErrors({});
       onClose();
@@ -148,6 +150,25 @@ export default function NewTeamModal({ isOpen, onClose, onTeamCreate, availableU
               placeholder={m.descriptionPlaceholder}
             />
           </div>
+
+          {projects && projects.length > 0 && (
+            <div className="mb-5">
+              <label className="block text-[13px] font-medium text-kodo-text mb-2">
+                {language === 'hu' ? 'Projekt' : 'Project'} <span className="text-red-400" aria-hidden="true">*</span>
+              </label>
+              <select
+                value={formData.project_id || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, project_id: Number(e.target.value) || null }))}
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30"
+              >
+                {projects.map(p => (
+                  <option key={p.id} value={p.id} className="bg-[#1a1a24] text-white">
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="mb-5">
             <label className="block text-[13px] font-medium text-kodo-text mb-2">
