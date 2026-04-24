@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { projects as projectsApi, participants as participantsApi, users as usersApi } from '@/services/api';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
+import { useAppData } from '@/context/AppDataContext';
 
 const PROJECT_COLORS = [
   '#6366f1', '#14b8a6', '#ec4899', '#f59e0b',
@@ -26,6 +27,7 @@ export default function EditProjectModal({ isOpen, onClose }) {
   const { currentUser } = useAuth();
   const { t, language } = useTheme();
   const toast = useToast();
+  const { invalidate: invalidateCache } = useAppData();
   const sb = t.sidebar;
 
   const [form, setForm] = useState({
@@ -90,6 +92,7 @@ export default function EditProjectModal({ isOpen, onClose }) {
       setSearchQuery('');
       setSearchResults([]);
       await loadMembers();
+      invalidateCache();
     } catch (err) {
       toast.error(err.message || 'Failed to add member');
     } finally { setAddingUser(false); }
@@ -101,6 +104,7 @@ export default function EditProjectModal({ isOpen, onClose }) {
       await participantsApi.remove('project', activeProject.id, userId);
       toast.success(language === 'hu' ? 'Tag eltávolítva' : 'Member removed');
       await loadMembers();
+      invalidateCache();
     } catch (err) {
       toast.error(err.message || 'Failed to remove member');
     }

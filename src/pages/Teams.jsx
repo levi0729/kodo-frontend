@@ -220,6 +220,7 @@ export default function TeamsPage({ onNavigate }) {
         description: teamData.description,
         color: teamData.color,
         visibility: teamData.visibility,
+        project_id: activeProject?.id || undefined,
       });
       const newTeam = res.team || res.data;
       // Add members
@@ -242,9 +243,10 @@ export default function TeamsPage({ onNavigate }) {
   const handleAddMember = async (teamId, userId) => {
     try {
       await participantsApi.add('team', teamId, userId);
-      // Refresh teams
+      // Refresh teams and invalidate cache so project members update too
       const teamsRes = await teamsApi.list().catch(() => ({ teams: [] }));
       setTeams(teamsRes.teams || teamsRes.data || []);
+      invalidateCache();
       toast.success(t.teamsPage.memberAdded || 'Member added!');
     } catch (err) {
       toast.error(err.message || t.teamsPage.memberAddFailed);

@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 const COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#22c55e', '#0ea5e9'];
-const STATUS_COLORS = { online: '#22c55e', away: '#f59e0b', dnd: '#ef4444', offline: '#52525b' };
+const STATUS_COLORS = { online: '#22c55e', away: '#f59e0b', busy: '#ef4444', dnd: '#ef4444', offline: '#52525b' };
 
 export default function Avatar({ user, size = 36, showStatus = false, className = '' }) {
   if (!user) return null;
