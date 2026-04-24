@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, FolderKanban, MessageSquare,
   CalendarDays, Settings, ChevronDown,
   Check, Plus, Pencil,
-  Clock, Activity
+  Clock
 } from 'lucide-react';
 import clsx from 'clsx';
 import Avatar from './Avatar';
@@ -22,10 +22,9 @@ const NAV_ICONS = {
   teams: Users,
   messages: MessageSquare,
   'time-tracking': Clock,
-  activity: Activity,
 };
 
-const NAV_KEYS = ['dashboard', 'calendar', 'task', 'teams', 'messages', 'time-tracking', 'activity'];
+const NAV_KEYS = ['dashboard', 'calendar', 'task', 'teams', 'messages', 'time-tracking'];
 const NAV_LABEL_KEYS = {
   dashboard: 'dashboard',
   calendar: 'calendar',
@@ -33,7 +32,6 @@ const NAV_LABEL_KEYS = {
   teams: 'teams',
   messages: 'messages',
   'time-tracking': 'timeTracking',
-  activity: 'activity',
 };
 
 export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileClose }) {

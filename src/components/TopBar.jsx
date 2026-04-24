@@ -31,7 +31,7 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen, onNavig
     }
     setNotifLoading(true);
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 15000);
+    const interval = setInterval(fetchNotifs, 5000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
@@ -88,10 +88,16 @@ export default function TopBar({ activePage, onMenuToggle, onSearchOpen, onNavig
       const url = n.action_url || '';
       if (url.includes('/messages') || n.notification_type === 'message' || n.source === 'mention') {
         const params = {};
-        const roomMatch = url.match(/room=(\d+)/);
         const dmMatch = url.match(/dmUserId=(\d+)/);
-        if (roomMatch) params.teamId = roomMatch[1];
-        if (dmMatch) params.dmUserId = dmMatch[1];
+        if (dmMatch) {
+          params.dmUserId = dmMatch[1];
+        } else if (n.actor_id && (n.notification_type === 'message' || n.source === 'mention')) {
+          // DM notification - navigate to the sender's DM
+          params.dmUserId = n.actor_id;
+        } else {
+          const teamMatch = url.match(/teamId=(\d+)/);
+          if (teamMatch) params.teamId = teamMatch[1];
+        }
         onNavigate('messages', params);
       } else if (url.includes('/tasks') || n.notification_type === 'task') {
         onNavigate('task');

@@ -136,6 +136,11 @@ export function MessagesProvider({ children }) {
     setActiveRoomId(roomId);
     setActiveConversationId(null);
     fetchMessages(roomId);
+    // Clear unread count for this room
+    chatApi.markAsRead(roomId).catch(() => {});
+    setConversations(prev =>
+      prev.map(c => c.room_id === roomId ? { ...c, unread_count: 0 } : c)
+    );
   }, [fetchMessages]);
 
   const openDM = useCallback((otherUserId) => {

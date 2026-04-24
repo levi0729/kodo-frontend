@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   User, Mail, Building2, CheckCircle2, Clock, FolderKanban,
   TrendingUp, Edit3, Loader2
@@ -19,6 +19,7 @@ function isAssignedTo(task, userId) {
 
 export default function ProfilePage({ onNavigate }) {
   const { userId: paramUserId } = useParams();
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { userProjects } = useProject();
   const { tasks } = useTasks();
@@ -175,7 +176,10 @@ export default function ProfilePage({ onNavigate }) {
 
           {isOwnProfile && (
             <button
-              onClick={() => onNavigate('settings')}
+              onClick={() => {
+                if (onNavigate) onNavigate('settings');
+                else navigate('/settings');
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-kodo-text-secondary text-[12px] font-medium cursor-pointer hover:bg-white/[0.08] transition-colors"
             >
               <Edit3 size={13} />

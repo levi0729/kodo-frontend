@@ -17,7 +17,6 @@ const CalendarPage = lazy(() => import('@/pages/Calendar'));
 const SettingsPage = lazy(() => import('@/pages/Settings'));
 const TimeTrackingPage = lazy(() => import('@/pages/TimeTracking'));
 const FriendsPage = lazy(() => import('@/pages/Friends'));
-const ActivityLogPage = lazy(() => import('@/pages/ActivityLog'));
 const OrganizationsPage = lazy(() => import('@/pages/Organizations'));
 const ProfilePage = lazy(() => import('@/pages/Profile'));
 import { ProjectProvider, useProject } from '@/context/ProjectContext';
@@ -38,7 +37,6 @@ const PAGE_ROUTES = {
   settings: '/settings',
   'time-tracking': '/time-tracking',
   friends: '/friends',
-  activity: '/activity',
   organizations: '/organizations',
   profile: '/profile',
 };
@@ -152,7 +150,6 @@ function AppContent() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/time-tracking" element={<TimeTrackingPage />} />
                 <Route path="/friends" element={<FriendsPage onNavigate={handleNavigate} />} />
-                <Route path="/activity" element={<ActivityLogPage />} />
                 <Route path="/organizations" element={<OrganizationsPage />} />
                 <Route path="/profile" element={<ProfilePage onNavigate={handleNavigate} />} />
                 <Route path="/profile/:userId" element={<ProfilePage onNavigate={handleNavigate} />} />
