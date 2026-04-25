@@ -71,7 +71,6 @@ export default function SettingsPage() {
     display_name: '',
     username: '',
     job_title: '',
-    department: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -88,7 +87,6 @@ export default function SettingsPage() {
         display_name: currentUser.display_name || '',
         username: currentUser.username || '',
         job_title: currentUser.job_title || '',
-        department: currentUser.department || '',
       });
     }
   }, [currentUser]);
@@ -170,7 +168,7 @@ export default function SettingsPage() {
           <div>
             <div className="text-[16px] font-semibold text-white">{currentUser.display_name}</div>
             <div className="text-[13px] text-kodo-text-muted mt-0.5">
-              {currentUser.job_title} · {currentUser.department}
+              {currentUser.job_title}
             </div>
             <div className="text-[12px] text-kodo-text-dim mt-0.5">{currentUser.email}</div>
           </div>
@@ -201,15 +199,6 @@ export default function SettingsPage() {
               id="set-job-title"
               value={profileForm.job_title}
               onChange={e => setProfileForm(p => ({ ...p, job_title: e.target.value }))}
-              className="kodo-input w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="set-department" className="text-[12px] text-kodo-text-muted block mb-1.5">{s.department}</label>
-            <input
-              id="set-department"
-              value={profileForm.department}
-              onChange={e => setProfileForm(p => ({ ...p, department: e.target.value }))}
               className="kodo-input w-full"
             />
           </div>

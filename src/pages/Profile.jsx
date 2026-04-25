@@ -145,7 +145,7 @@ export default function ProfilePage({ onNavigate }) {
 
       {/* Profile Card */}
       <div className="kodo-card p-5 md:p-8 mb-4 md:mb-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="relative group">

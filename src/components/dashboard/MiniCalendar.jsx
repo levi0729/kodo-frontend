@@ -7,7 +7,7 @@ export default function MiniCalendar({ calendarEvents }) {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   const dayHeaders = t.dashboard.calendarDays;
-  const monthName = t.calendar?.monthNames?.[currentMonth] || t.dashboard.march;
+  const monthName = t.calendar?.monthNames?.[currentMonth] || new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
 
   // Calculate the week containing today (Mon-Sun)
   const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
