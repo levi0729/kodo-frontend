@@ -367,11 +367,12 @@ export default function TeamsPage({ onNavigate }) {
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
-        {teams.map(team => {
+        {[...teams].sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0)).map(team => {
           const members = (team.members || []).map(id => typeof id === 'object' ? id : getUserById(id)).filter(Boolean);
           const teamProjects = userProjects.filter(p => p.team_id === team.id);
           const isExpanded = expandedTeam === team.id;
           const isOwner = team.owner_id === currentUser?.id;
+          const displayName = team.is_default ? (t.teamsPage.generalTeam || 'General') : team.name;
           const availableToAdd = allUsers.filter(u => !(team.members || []).includes(u.id) && friendIds.has(u.id));
 
           return (
@@ -430,15 +431,15 @@ export default function TeamsPage({ onNavigate }) {
                       className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[16px] font-bold"
                       style={{ backgroundColor: team.color + '18', color: team.color }}
                     >
-                      {team.name[0]}
+                      {displayName[0]}
                     </div>
                     <div>
-                      <div className="text-[15px] font-semibold text-white">{team.name}</div>
+                      <div className="text-[15px] font-semibold text-white">{displayName}</div>
                       <div className="text-[12px] text-kodo-text-muted">{team.description}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {team.owner_id === currentUser?.id && (
+                    {team.owner_id === currentUser?.id && !team.is_default && (
                       <button
                         onClick={(e) => { e.stopPropagation(); startEditing(team); }}
                         className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer border-none bg-transparent text-kodo-text-dim hover:text-indigo-400"
@@ -547,6 +548,7 @@ export default function TeamsPage({ onNavigate }) {
                       <MessageSquare size={15} />
                       {t.teamsPage.startChat}
                     </button>
+                    {!team.is_default && (
                     <div className="flex gap-2">
                       {team.owner_id === currentUser?.id ? (
                         <button
@@ -566,6 +568,7 @@ export default function TeamsPage({ onNavigate }) {
                         </button>
                       )}
                     </div>
+                    )}
                   </div>
                 </div>
               )}
