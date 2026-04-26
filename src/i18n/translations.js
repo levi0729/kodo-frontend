@@ -178,6 +178,7 @@ const translations = {
       cancel: 'Mégse',
       noGroups: 'Nincs még csoport',
       messageToGroup: 'Üzenet a {name} csoportba...',
+      yesterday: 'Tegnap',
     },
     calendarPage: {
       title: 'Naptár',
@@ -688,6 +689,7 @@ const translations = {
       cancel: 'Cancel',
       noGroups: 'No groups yet',
       messageToGroup: 'Message to {name}...',
+      yesterday: 'Yesterday',
     },
     calendarPage: {
       title: 'Calendar',

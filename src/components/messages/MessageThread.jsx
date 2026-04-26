@@ -26,6 +26,21 @@ export default function MessageThread({ messages, messagesLoading, activeDmUserI
     { label: t.messagesPage.emojiCategories.objects, emojis: ['⭐', '💡', '💎', '🏆', '🎯', '🚀', '⚡', '🔔', '📌', '🔗', '💬', '🗓️'] },
   ];
 
+  const msg = t.messagesPage;
+  const formatMessageTime = useCallback((dateStr) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const timeStr = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (isToday) return timeStr;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = d.getFullYear() === yesterday.getFullYear() && d.getMonth() === yesterday.getMonth() && d.getDate() === yesterday.getDate();
+    if (isYesterday) return `${msg.yesterday} ${timeStr}`;
+    const datePartStr = d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+    return `${datePartStr} ${timeStr}`;
+  }, [locale, msg.yesterday]);
+
   const displayMessages = (activeDmUserId || activeTeam || activeChannel || activeConversation) ? messages : [];
   const useVirtualization = displayMessages.length > VIRTUALIZE_THRESHOLD;
 
@@ -100,10 +115,7 @@ export default function MessageThread({ messages, messagesLoading, activeDmUserI
   // Render a single message row (shared between virtualized and non-virtualized)
   const renderMessage = useCallback((msg, idx, style) => {
     const sender = getUserById(msg.sender_id);
-    const time = new Date(msg.created_at).toLocaleTimeString(locale, {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const time = formatMessageTime(msg.created_at);
     const own = msg.sender_id === currentUser.id;
     const showHeader = idx === 0 || displayMessages[idx - 1].sender_id !== msg.sender_id;
     const reactions = msg.reactions || [];
