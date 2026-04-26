@@ -12,8 +12,8 @@ function Toggle({ value, onChange, disabled = false }) {
       onClick={() => !disabled && onChange(!value)}
       disabled={disabled}
       aria-pressed={value}
-      className="w-[42px] h-[24px] rounded-full p-0.5 cursor-pointer transition-colors border-none flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{ backgroundColor: value ? '#6366f1' : 'rgba(var(--kodo-text-dim-rgb), 0.3)' }}
+      className="w-[42px] h-[24px] rounded-full p-0.5 cursor-pointer transition-colors border-none flex items-center disabled:opacity-50 disabled:cursor-not-allowed border border-solid"
+      style={{ backgroundColor: value ? '#6366f1' : 'rgba(var(--kodo-text-dim-rgb), 0.5)', borderColor: value ? '#6366f1' : 'rgba(var(--kodo-text-dim-rgb), 0.25)' }}
     >
       <div
         className="w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
