@@ -239,6 +239,11 @@ const translations = {
       eventUpdateFailed: 'Nem sikerült frissíteni az eseményt',
       eventDeleteFailed: 'Nem sikerült törölni az eseményt',
       online: 'Online',
+      viewAll: 'Megtekintés',
+      tasksForDay: 'Napi feladatok',
+      eventsForDay: 'Napi események',
+      noItems: 'Nincs elem erre a napra',
+      task: 'Feladat',
     },
     chatErrors: {
       loadFailed: 'Nem sikerült betölteni az üzeneteket',
@@ -751,6 +756,11 @@ const translations = {
       eventUpdateFailed: 'Failed to update event',
       eventDeleteFailed: 'Failed to delete event',
       online: 'Online',
+      viewAll: 'View all',
+      tasksForDay: 'Tasks for the day',
+      eventsForDay: 'Events for the day',
+      noItems: 'No items for this day',
+      task: 'Task',
     },
     settings: {
       title: 'Settings',

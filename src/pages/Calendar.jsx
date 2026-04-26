@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Search,
-  Video, MapPin, Loader2
+  Video, MapPin, Loader2, CheckCircle2, Circle, Clock, X
 } from 'lucide-react';
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import EventDetailPopup from '@/components/calendar/EventDetailPopup';
 import NewEventModal from '@/components/calendar/NewEventModal';
 import { useProject } from '@/context/ProjectContext';
 import { calendarEvents as calendarApi, participants as participantsApi } from '@/services/api';
+import { useTasks } from '@/context/TasksContext';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -159,15 +160,92 @@ const EventCard = memo(function EventCard({ event, pos, colLayout, onSelect, get
   );
 });
 
+const TASK_STATUS_COLORS = {
+  todo: '#94a3b8',
+  in_progress: '#6366f1',
+  in_review: '#f59e0b',
+  done: '#22c55e',
+};
+
+function TaskStatusIcon({ status, size = 12 }) {
+  if (status === 'done') return <CheckCircle2 size={size} className="text-green-400 flex-shrink-0" />;
+  if (status === 'in_progress') return <Clock size={size} className="text-indigo-400 flex-shrink-0" />;
+  return <Circle size={size} className="text-slate-400 flex-shrink-0" />;
+}
+
+/* DayDetailModal — shows all events + tasks for a given day */
+function DayDetailModal({ day, events, tasks, onClose, onSelectEvent, cal, locale, statusLabels }) {
+  if (!day) return null;
+  const dayStr = day.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#1a1a24] border border-white/[0.1] rounded-2xl w-full max-w-[440px] max-h-[80vh] overflow-hidden animate-fade-in-up" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <h3 className="text-[16px] font-semibold text-white m-0">{dayStr}</h3>
+          <button onClick={onClose} className="text-kodo-text-dim hover:text-kodo-text transition-colors cursor-pointer bg-transparent border-none p-0">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-4 overflow-y-auto max-h-[60vh] space-y-4">
+          {events.length > 0 && (
+            <div>
+              <div className="text-[11px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em] mb-2">{cal.eventsForDay}</div>
+              <div className="space-y-1.5">
+                {events.map(ev => {
+                  const s = new Date(ev.start_time);
+                  const e = new Date(ev.end_time);
+                  const timeStr = `${s.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} – ${e.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
+                  return (
+                    <div key={ev.id} onClick={() => { onSelectEvent(ev); onClose(); }}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-colors border-l-3"
+                      style={{ borderLeft: `3px solid ${ev.color}` }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-white truncate">{ev.title}</div>
+                        <div className="text-[11px] text-kodo-text-dim">{timeStr}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {tasks.length > 0 && (
+            <div>
+              <div className="text-[11px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em] mb-2">{cal.tasksForDay}</div>
+              <div className="space-y-1.5">
+                {tasks.map(task => (
+                  <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03]"
+                    style={{ borderLeft: `3px solid ${TASK_STATUS_COLORS[task.status] || '#94a3b8'}` }}>
+                    <TaskStatusIcon status={task.status} size={14} />
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[13px] font-medium truncate ${task.status === 'done' ? 'text-kodo-text-dim line-through' : 'text-white'}`}>{task.title}</div>
+                      <div className="text-[11px] text-kodo-text-dim">{statusLabels[task.status] || task.status}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {events.length === 0 && tasks.length === 0 && (
+            <div className="text-center text-[13px] text-kodo-text-dim py-6">{cal.noItems}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* CalendarPage */
 export default function CalendarPage() {
   const { activeProject } = useProject();
   const { t } = useTheme();
   const cal = t.calendarPage;
+  const statusLabels = t.tasksPage?.columns || {};
   const toast = useToast();
   const { language } = useTheme();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
+  const { tasks: allTasks } = useTasks();
 
   const TABS = [
     { key: 'all', label: cal.tabs.all },
@@ -192,6 +270,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [projectMembers, setProjectMembers] = useState([]);
   const [calLoading, setCalLoading] = useState(true);
+  const [dayDetailDay, setDayDetailDay] = useState(null);
   const { allUsers } = useAppData();
 
   useEffect(() => {
@@ -239,6 +318,14 @@ export default function CalendarPage() {
   const eventsForDay = useCallback(
     (day) => filtered.filter(e => sameDay(new Date(e.start_time), day)),
     [filtered]
+  );
+
+  const tasksForDay = useCallback(
+    (day) => {
+      const ds = toDateStr(day);
+      return (allTasks || []).filter(task => task.due_date && task.due_date.substring(0, 10) === ds);
+    },
+    [allTasks]
   );
 
   const nav = (dir) => {
@@ -475,6 +562,11 @@ export default function CalendarPage() {
                   const isCurMonth = day.getMonth() === currentDate.getMonth();
                   const isToday = sameDay(day, getToday());
                   const dayEvts = eventsForDay(day);
+                  const dayTasks = tasksForDay(day);
+                  const allItems = [...dayEvts.map(e => ({ type: 'event', data: e })), ...dayTasks.map(t => ({ type: 'task', data: t }))];
+                  const totalCount = allItems.length;
+                  const MAX_VISIBLE_SM = 3;
+                  const MAX_VISIBLE_XS = 2;
                   return (
                     <div key={di} className={`p-1.5 border-l border-white/[0.04] first:border-l-0 overflow-hidden ${
                       isToday ? 'bg-kodo-accent/[0.06]' : ''
@@ -482,19 +574,34 @@ export default function CalendarPage() {
                       <div className={`text-[12px] font-semibold mb-0.5 ${isToday ? 'text-indigo-400' : 'text-kodo-text-secondary'}`}>
                         {day.getDate()}
                       </div>
-                      <div className="space-y-1 overflow-hidden">
-                        {dayEvts.slice(0, 3).map((ev, ei) => (
-                          <div key={ev.id} onClick={() => setSelectedEvent(ev)}
-                            className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 sm:py-[3px] rounded truncate font-medium cursor-pointer hover:brightness-125 transition-all border border-transparent ${ei === 2 ? 'hidden sm:block' : ''}`}
-                            style={{ backgroundColor: ev.color + '25', color: ev.color, borderColor: ev.color + '30' }}>
-                            {ev.title}
-                          </div>
+                      <div className="space-y-0.5 overflow-hidden">
+                        {allItems.slice(0, MAX_VISIBLE_SM).map((item, idx) => (
+                          item.type === 'event' ? (
+                            <div key={`e-${item.data.id}`} onClick={() => setSelectedEvent(item.data)}
+                              className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 sm:py-[3px] rounded truncate font-medium cursor-pointer hover:brightness-125 transition-all border border-transparent ${idx >= MAX_VISIBLE_XS ? 'hidden sm:block' : ''}`}
+                              style={{ backgroundColor: item.data.color + '25', color: item.data.color, borderColor: item.data.color + '30' }}>
+                              {item.data.title}
+                            </div>
+                          ) : (
+                            <div key={`t-${item.data.id}`}
+                              className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 sm:py-[3px] rounded truncate font-medium flex items-center gap-1 ${idx >= MAX_VISIBLE_XS ? 'hidden sm:block' : ''}`}
+                              style={{ backgroundColor: (TASK_STATUS_COLORS[item.data.status] || '#94a3b8') + '20', color: TASK_STATUS_COLORS[item.data.status] || '#94a3b8' }}>
+                              <TaskStatusIcon status={item.data.status} size={9} />
+                              <span className="truncate">{item.data.title}</span>
+                            </div>
+                          )
                         ))}
-                        {dayEvts.length > 3 && (
-                          <div className="text-[8px] text-kodo-text-dim px-1.5 hidden sm:block">+{dayEvts.length - 3}</div>
+                        {totalCount > MAX_VISIBLE_SM && (
+                          <button onClick={() => setDayDetailDay(day)}
+                            className="text-[8px] text-indigo-400 px-1.5 hidden sm:block cursor-pointer bg-transparent border-none p-0 hover:text-indigo-300 transition-colors">
+                            {cal.viewAll} (+{totalCount - MAX_VISIBLE_SM})
+                          </button>
                         )}
-                        {dayEvts.length > 2 && (
-                          <div className="text-[8px] text-kodo-text-dim px-1.5 sm:hidden">+{dayEvts.length - 2}</div>
+                        {totalCount > MAX_VISIBLE_XS && (
+                          <button onClick={() => setDayDetailDay(day)}
+                            className="text-[8px] text-indigo-400 px-1.5 sm:hidden cursor-pointer bg-transparent border-none p-0 hover:text-indigo-300 transition-colors">
+                            {cal.viewAll} (+{totalCount - MAX_VISIBLE_XS})
+                          </button>
                         )}
                       </div>
                     </div>
@@ -528,6 +635,19 @@ export default function CalendarPage() {
         defaultDate={currentDate}
         members={projectMembers}
       />
+
+      {dayDetailDay && (
+        <DayDetailModal
+          day={dayDetailDay}
+          events={eventsForDay(dayDetailDay)}
+          tasks={tasksForDay(dayDetailDay)}
+          onClose={() => setDayDetailDay(null)}
+          onSelectEvent={setSelectedEvent}
+          cal={cal}
+          locale={locale}
+          statusLabels={statusLabels}
+        />
+      )}
     </div>
   );
 }
