@@ -60,8 +60,9 @@ export default function Sidebar({ activePage, onNavigate, mobileOpen, onMobileCl
       )}
     <nav
       className={clsx(
-        'flex flex-col bg-white/[0.02] border-r border-white/[0.06] transition-all duration-300 ease-out flex-shrink-0',
+        'flex flex-col border-r border-white/[0.06] transition-all duration-300 ease-out flex-shrink-0',
         'fixed inset-y-0 left-0 z-50 w-[260px]',
+        'bg-kodo-bg lg:bg-white/[0.02]',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:relative lg:z-20 lg:translate-x-0',
         collapsed ? 'lg:w-[68px]' : 'lg:w-[260px]'

@@ -3,7 +3,7 @@ import translations from '@/i18n/translations';
 
 const ThemeContext = createContext();
 
-const FONT_SIZE_MAP = { small: '14px', medium: '16px', large: '18px', xlarge: '20px' };
+const FONT_SIZE_MAP = { small: '0.9', medium: '1', large: '1.1', xlarge: '1.2' };
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => sessionStorage.getItem('kodo-theme') || 'dark');
@@ -21,7 +21,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     sessionStorage.setItem('kodo-font-size', fontSize);
-    document.documentElement.style.fontSize = FONT_SIZE_MAP[fontSize] || '16px';
+    document.documentElement.style.zoom = FONT_SIZE_MAP[fontSize] || '1';
   }, [fontSize]);
 
   const t = translations[language] || translations.hu;

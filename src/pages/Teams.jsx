@@ -10,6 +10,7 @@ import TeamMemberPopup from '@/components/TeamMemberPopup';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppData } from '@/context/AppDataContext';
+import { friends as friendsApi } from '@/services/api';
 
 function TeamChannelsSection({ team, isOwner, onStartChat }) {
   const toast = useToast();
@@ -201,7 +202,7 @@ export default function TeamsPage({ onNavigate }) {
   const [teamsLoading, setTeamsLoading] = useState(true);
   const { activeProject, userProjects } = useProject();
   const { t } = useTheme();
-  const { allUsers, invalidate: invalidateCache } = useAppData();
+  const { allUsers, friendsList, invalidate: invalidateCache } = useAppData();
 
   useEffect(() => {
     if (!activeProject?.id) return;
@@ -211,6 +212,8 @@ export default function TeamsPage({ onNavigate }) {
       setTeamsLoading(false);
     });
   }, [activeProject?.id]);
+
+  const friendIds = new Set((friendsList || []).map(f => f.id));
 
   const getUserById = (id) => allUsers.find(u => u.id === id) || null;
 
@@ -368,7 +371,8 @@ export default function TeamsPage({ onNavigate }) {
           const members = (team.members || []).map(id => typeof id === 'object' ? id : getUserById(id)).filter(Boolean);
           const teamProjects = userProjects.filter(p => p.team_id === team.id);
           const isExpanded = expandedTeam === team.id;
-          const availableToAdd = allUsers.filter(u => !(team.members || []).includes(u.id));
+          const isOwner = team.owner_id === currentUser?.id;
+          const availableToAdd = allUsers.filter(u => !(team.members || []).includes(u.id) && friendIds.has(u.id));
 
           return (
             <div
@@ -462,7 +466,7 @@ export default function TeamsPage({ onNavigate }) {
                     <div className="text-[11px] font-semibold text-kodo-text-muted uppercase tracking-[0.06em]">
                       {t.teamsPage.membersLabel}
                     </div>
-                    {availableToAdd.length > 0 && (
+                    {isOwner && availableToAdd.length > 0 && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -575,7 +579,7 @@ export default function TeamsPage({ onNavigate }) {
         isOpen={showNewTeamModal}
         onClose={() => setShowNewTeamModal(false)}
         onTeamCreate={handleTeamCreate}
-        availableUsers={allUsers}
+        availableUsers={allUsers.filter(u => friendIds.has(u.id))}
         projects={userProjects}
         activeProjectId={activeProject?.id}
       />

@@ -285,18 +285,18 @@ export default function FriendsPage({ onNavigate }) {
                             <button
                               onClick={() => handleAccept(record)}
                               disabled={actionLoading === record.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-[12px] font-medium cursor-pointer border-none hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/15 text-emerald-400 cursor-pointer border-none hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t.friends.accept}
                             >
-                              {actionLoading === record.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                              {t.friends.accept}
+                              {actionLoading === record.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                             </button>
                             <button
                               onClick={() => handleDecline(record)}
                               disabled={actionLoading === record.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-[12px] font-medium cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t.friends.decline}
                             >
-                              <X size={14} />
-                              {t.friends.decline}
+                              <X size={16} />
                             </button>
                           </div>
                         </div>

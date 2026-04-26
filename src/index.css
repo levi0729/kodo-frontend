@@ -155,15 +155,35 @@ html.light .text-white\/95 { color: var(--kodo-heading) !important; }
 html.light .text-white\/\[0\.95\] { color: var(--kodo-heading) !important; }
 
 html.light .kodo-btn-primary,
-html.light .kodo-btn-primary .text-white,
+html.light .kodo-btn-primary *,
 html.light .bg-kodo-accent.text-white,
+html.light .bg-kodo-accent .text-white,
 html.light .bg-kodo-accent\/20 .text-white,
-html.light .bg-indigo-500.text-white,
-html.light .bg-red-500.text-white,
-html.light .bg-red-500\/10 .text-red-400,
+html.light button.bg-indigo-500,
+html.light button.bg-indigo-500 *,
+html.light button.bg-indigo-600,
+html.light button.bg-indigo-600 *,
+html.light button.bg-red-500,
+html.light button.bg-red-500 *,
+html.light button.bg-green-500,
+html.light button.bg-green-500 *,
+html.light button.bg-emerald-500,
+html.light button.bg-emerald-500 *,
+html.light a.bg-indigo-500,
+html.light a.bg-indigo-500 *,
 html.light button[type="submit"].bg-indigo-500,
-html.light button[type="submit"].bg-kodo-accent {
+html.light button[type="submit"].bg-kodo-accent,
+html.light .bg-indigo-500.text-white,
+html.light .bg-indigo-500 .text-white,
+html.light .bg-red-500.text-white,
+html.light .bg-red-500 .text-white,
+html.light .bg-green-500.text-white,
+html.light .bg-green-500 .text-white {
   color: #ffffff !important;
+}
+
+html.light .bg-red-500\/10 .text-red-400 {
+  color: #ef4444 !important;
 }
 
 html.light .bg-\[\#1a1a24\] { background-color: var(--kodo-modal-bg) !important; }

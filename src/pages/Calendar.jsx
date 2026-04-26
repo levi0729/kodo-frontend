@@ -48,6 +48,37 @@ function getEventPos(event) {
   };
 }
 
+/* Compute column layout for overlapping events in a single day */
+function layoutOverlaps(dayEvents) {
+  if (!dayEvents.length) return new Map();
+  const sorted = [...dayEvents].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+  const columns = [];
+  const assignments = [];
+  for (const evt of sorted) {
+    const start = new Date(evt.start_time).getTime();
+    let placed = -1;
+    for (let c = 0; c < columns.length; c++) {
+      if (start >= columns[c]) { placed = c; break; }
+    }
+    if (placed === -1) { placed = columns.length; columns.push(0); }
+    columns[placed] = new Date(evt.end_time).getTime();
+    assignments.push({ event: evt, col: placed });
+  }
+  const result = new Map();
+  for (const { event, col } of assignments) {
+    const evtStart = new Date(event.start_time).getTime();
+    const evtEnd = new Date(event.end_time).getTime();
+    let maxCol = col;
+    for (const other of assignments) {
+      const os = new Date(other.event.start_time).getTime();
+      const oe = new Date(other.event.end_time).getTime();
+      if (os < evtEnd && oe > evtStart) maxCol = Math.max(maxCol, other.col);
+    }
+    result.set(event.id, { col, totalCols: maxCol + 1 });
+  }
+  return result;
+}
+
 function getMonthWeeks(year, month) {
   const start = getMonday(new Date(year, month, 1));
   const days = [];
@@ -64,7 +95,7 @@ function toDateStr(d) {
 }
 
 /* EventCard — memoized: re-renders only when event/pos identity changes */
-const EventCard = memo(function EventCard({ event, pos, onSelect, getUserById, locale }) {
+const EventCard = memo(function EventCard({ event, pos, colLayout, onSelect, getUserById, locale }) {
   const { t } = useTheme();
   const s = new Date(event.start_time);
   const e = new Date(event.end_time);
@@ -72,13 +103,18 @@ const EventCard = memo(function EventCard({ event, pos, onSelect, getUserById, l
   const endStr = e.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   const isShort = pos.duration < 0.75;
 
+  const colWidth = colLayout ? (100 / colLayout.totalCols) : 100;
+  const colLeft = colLayout ? (colLayout.col * colWidth) : 0;
+
   return (
     <div
       onClick={(ev) => { ev.stopPropagation(); onSelect(event); }}
-      className="absolute left-1 right-1 rounded-lg px-2 cursor-pointer transition-all hover:brightness-125 hover:z-20 overflow-hidden z-10"
+      className="absolute rounded-lg px-1.5 sm:px-2 cursor-pointer transition-all hover:brightness-125 hover:z-20 overflow-hidden z-10"
       style={{
         top: pos.top,
         height: pos.height,
+        left: `calc(${colLeft}% + 2px)`,
+        width: `calc(${colWidth}% - 4px)`,
         backgroundColor: event.color + '22',
         borderLeft: `3px solid ${event.color}`,
         display: 'flex',
@@ -404,6 +440,7 @@ export default function CalendarPage() {
             {(viewMode === 'week' ? weekDays : [currentDate]).map((d, idx) => {
               const dayEvts = eventsForDay(d);
               const isToday = sameDay(d, getToday());
+              const overlapLayout = layoutOverlaps(dayEvts);
               return (
                 <div key={idx} className={`relative border-l border-white/[0.04] ${isToday ? 'bg-kodo-accent/[0.03]' : ''}`}>
                   {HOURS.map((h, i) => (
@@ -411,7 +448,7 @@ export default function CalendarPage() {
                       style={{ top: `${(i / TOTAL_SPAN) * 100}%` }} />
                   ))}
                   {dayEvts.map(event => (
-                    <EventCard key={event.id} event={event} pos={getEventPos(event)} onSelect={setSelectedEvent} getUserById={getUserById} locale={locale} />
+                    <EventCard key={event.id} event={event} pos={getEventPos(event)} colLayout={overlapLayout.get(event.id)} onSelect={setSelectedEvent} getUserById={getUserById} locale={locale} />
                   ))}
                 </div>
               );
@@ -445,16 +482,19 @@ export default function CalendarPage() {
                       <div className={`text-[12px] font-semibold mb-0.5 ${isToday ? 'text-indigo-400' : 'text-kodo-text-secondary'}`}>
                         {day.getDate()}
                       </div>
-                      <div className="space-y-0.5 overflow-hidden">
-                        {dayEvts.slice(0, 3).map(ev => (
+                      <div className="space-y-1 overflow-hidden">
+                        {dayEvts.slice(0, 3).map((ev, ei) => (
                           <div key={ev.id} onClick={() => setSelectedEvent(ev)}
-                            className="text-[9px] px-1.5 py-0.5 rounded truncate font-medium cursor-pointer hover:brightness-125 transition-all"
-                            style={{ backgroundColor: ev.color + '20', color: ev.color }}>
+                            className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 sm:py-[3px] rounded truncate font-medium cursor-pointer hover:brightness-125 transition-all border border-transparent ${ei === 2 ? 'hidden sm:block' : ''}`}
+                            style={{ backgroundColor: ev.color + '25', color: ev.color, borderColor: ev.color + '30' }}>
                             {ev.title}
                           </div>
                         ))}
                         {dayEvts.length > 3 && (
-                          <div className="text-[8px] text-kodo-text-dim px-1.5">+{dayEvts.length - 3}</div>
+                          <div className="text-[8px] text-kodo-text-dim px-1.5 hidden sm:block">+{dayEvts.length - 3}</div>
+                        )}
+                        {dayEvts.length > 2 && (
+                          <div className="text-[8px] text-kodo-text-dim px-1.5 sm:hidden">+{dayEvts.length - 2}</div>
                         )}
                       </div>
                     </div>

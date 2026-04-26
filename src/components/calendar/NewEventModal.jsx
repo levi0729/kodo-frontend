@@ -77,8 +77,8 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
       reminder_minutes: 15,
       color: form.color,
       attendees: form.attendees.length
-        ? (form.attendees.includes(currentUser.id) ? form.attendees : [currentUser.id, ...form.attendees])
-        : [currentUser.id],
+        ? (currentUser && !form.attendees.includes(currentUser.id) ? [currentUser.id, ...form.attendees] : form.attendees)
+        : (currentUser ? [currentUser.id] : []),
     };
 
     if (editEvent) {
@@ -182,6 +182,7 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
             </div>
           </div>
 
+          {members.length > 0 && (
           <div>
             <label className="block text-[13px] font-medium text-kodo-text mb-1.5">{cal.attendees}</label>
             <div className="max-h-32 overflow-y-auto border border-white/[0.08] rounded-lg p-1.5 space-y-0.5">
@@ -200,6 +201,7 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
               ))}
             </div>
           </div>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={() => { setForm(blankForm); onClose(); }}
