@@ -16,8 +16,8 @@ function Toggle({ value, onChange, disabled = false }) {
       style={{ backgroundColor: value ? '#6366f1' : 'rgba(var(--kodo-text-dim-rgb), 0.3)' }}
     >
       <div
-        className="w-5 h-5 rounded-full bg-white transition-transform duration-200"
-        style={{ transform: value ? 'translateX(18px)' : 'translateX(0)' }}
+        className="w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+        style={{ transform: value ? 'translateX(18px)' : 'translateX(0)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
       />
     </button>
   );
