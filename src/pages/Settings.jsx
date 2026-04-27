@@ -408,28 +408,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Privacy ────────────────────────────────── */}
-      <div className="kodo-card p-4 md:p-6 mb-4">
-        <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.privacy}</h3>
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-[13px] font-medium text-kodo-text">{s.allowDM}</div>
-              <div className="text-[12px] text-kodo-text-muted mt-0.5">{s.allowDMDesc}</div>
-            </div>
-            <SegmentedControl
-              value={settingsState.allow_direct_messages}
-              options={[
-                { key: 'everyone', label: s.allowDMEveryone },
-                { key: 'team_members', label: s.allowDMTeam },
-                { key: 'nobody', label: s.allowDMNobody },
-              ]}
-              onChange={k => updateSetting('allow_direct_messages', k)}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* ── Change password ───────────────────────── */}
       <div className="kodo-card p-4 md:p-6">
         <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.changePassword || 'Change Password'}</h3>
