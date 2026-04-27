@@ -10,7 +10,7 @@ import WeeklyChart from '@/components/dashboard/WeeklyChart';
 import MiniCalendar from '@/components/dashboard/MiniCalendar';
 import { useProject } from '@/context/ProjectContext';
 import { useAuth } from '@/context/AuthContext';
-import { calendarEvents as calendarApi, timeEntries as timeEntriesApi, participants as participantsApi } from '@/services/api';
+import { calendarEvents as calendarApi, timeEntries as timeEntriesApi, participants as participantsApi, tasks as tasksApi } from '@/services/api';
 import { useTasks } from '@/context/TasksContext';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -157,6 +157,7 @@ export default function Dashboard({ onNavigate }) {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [timeEntriesData, setTimeEntriesData] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [allUserTasks, setAllUserTasks] = useState([]);
   const [dashLoading, setDashLoading] = useState(true);
 
   const [selectedMemberId, setSelectedMemberId] = useState(null);
@@ -169,12 +170,14 @@ export default function Dashboard({ onNavigate }) {
     setDashLoading(true);
     Promise.all([
       participantsApi.list('project', projectId).catch(() => ({ data: [] })),
-      calendarApi.list().catch(() => ({ data: [] })),
+      calendarApi.list({ per_page: 100 }).catch(() => ({ data: [] })),
       timeEntriesApi.list({ project_id: projectId, per_page: 100 }).catch(() => ({ data: [] })),
-    ]).then(([membersRes, eventsRes, entriesRes]) => {
+      tasksApi.list({ per_page: 100 }).catch(() => ({ tasks: [] })),
+    ]).then(([membersRes, eventsRes, entriesRes, allTasksRes]) => {
       setTeamMembers((membersRes.participants || membersRes.data || []).map(p => p.user || p));
       setCalendarEvents(eventsRes.calendar_events || eventsRes.data || []);
       setTimeEntriesData(entriesRes.time_entries || entriesRes.data || []);
+      setAllUserTasks(allTasksRes.tasks || []);
       setDashLoading(false);
     });
   }, [activeProject, projectId]);
@@ -186,14 +189,14 @@ export default function Dashboard({ onNavigate }) {
 
   const userProjectsWithTasks = useMemo(() => {
     return userProjects.map(p => {
-      const pTasks = allTasks.filter(t => t.project_id == p.id);
+      const pTasks = allUserTasks.filter(t => t.project_id == p.id);
       const totalTasks = pTasks.length;
       const doneCount = pTasks.filter(t => t.status === 'done').length;
       const progress = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
       const dl = p.target_end_date ? Math.ceil((new Date(p.target_end_date) - new Date()) / (1000*60*60*24)) : null;
       return { ...p, userProgress: progress, userTasks: totalTasks, userDone: doneCount, daysLeft: dl };
     });
-  }, [activeProject, allTasks, userProjects, currentUser]);
+  }, [allUserTasks, userProjects]);
 
   const allProjectTasks = useMemo(() => {
     return allTasks.filter(t => t.project_id == projectId);
