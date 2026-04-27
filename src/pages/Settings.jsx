@@ -394,22 +394,17 @@ export default function SettingsPage() {
       <div className="kodo-card p-4 md:p-6 mb-4">
         <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.chat}</h3>
         <div className="flex flex-col gap-5">
-          {[
-            { label: s.enterToSend, desc: s.enterToSendDesc, key: 'enter_to_send' },
-            { label: s.typingIndicator, desc: s.typingIndicatorDesc, key: 'show_typing_indicator' },
-          ].map(item => (
-            <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="text-[13px] font-medium text-kodo-text">{item.label}</div>
-                <div className="text-[12px] text-kodo-text-muted mt-0.5">{item.desc}</div>
-              </div>
-              <Toggle
-                value={!!settingsState[item.key]}
-                disabled={!settingsLoaded}
-                onChange={v => updateSetting(item.key, v)}
-              />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="text-[13px] font-medium text-kodo-text">{s.typingIndicator}</div>
+              <div className="text-[12px] text-kodo-text-muted mt-0.5">{s.typingIndicatorDesc}</div>
             </div>
-          ))}
+            <Toggle
+              value={!!settingsState.show_typing_indicator}
+              disabled={!settingsLoaded}
+              onChange={v => updateSetting('show_typing_indicator', v)}
+            />
+          </div>
         </div>
       </div>
 
@@ -417,18 +412,6 @@ export default function SettingsPage() {
       <div className="kodo-card p-4 md:p-6 mb-4">
         <h3 className="text-[14px] font-semibold text-white m-0 mb-5">{s.privacy}</h3>
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-[13px] font-medium text-kodo-text">{s.showOnlineStatus}</div>
-              <div className="text-[12px] text-kodo-text-muted mt-0.5">{s.showOnlineStatusDesc}</div>
-            </div>
-            <Toggle
-              value={!!settingsState.show_online_status}
-              disabled={!settingsLoaded}
-              onChange={v => updateSetting('show_online_status', v)}
-            />
-          </div>
-
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="text-[13px] font-medium text-kodo-text">{s.allowDM}</div>
