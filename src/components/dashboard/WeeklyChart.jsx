@@ -8,12 +8,21 @@ const WeeklyChart = memo(function WeeklyChart({ projectId, teamMembers, timeEntr
   const memberColors = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#ef4444', '#22c55e'];
 
   const { memberData, dailyTotals, maxTotal } = useMemo(() => {
+    // Compute current week boundaries (Monday 00:00 – Sunday 23:59)
+    const now = new Date();
+    const dayOfWeek = (now.getDay() + 6) % 7; // Monday=0
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
     const data = teamMembers.slice(0, 6).map((member, idx) => {
       const entries = timeEntries.filter(e => e.user_id === member.id);
       const dailyHours = days.map((_, di) => {
         const dayEntries = entries.filter(e => {
           const d = new Date(e.date);
-          return (d.getDay() + 6) % 7 === di; // Monday=0
+          return d >= monday && d <= sunday && (d.getDay() + 6) % 7 === di;
         });
         return Math.round(dayEntries.reduce((sum, e) => sum + (e.hours || 0), 0) * 10) / 10;
       });

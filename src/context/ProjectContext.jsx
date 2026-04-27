@@ -72,6 +72,21 @@ export function ProjectProvider({ children }) {
     }
   }, [currentUser, toast]);
 
+  const deleteProject = useCallback(async (projectId) => {
+    try {
+      await projectsApi.destroy(projectId);
+      setUserProjects(prev => prev.filter(p => p.id !== projectId));
+      if (activeProjectId === projectId) {
+        setActiveProjectId(null);
+      }
+      toast.success(tt.projectDeleteSuccess || (t.sidebar ? 'Project deleted' : 'Project deleted'));
+      await fetchProjects();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete project');
+      throw err;
+    }
+  }, [activeProjectId, toast, fetchProjects]);
+
   return (
     <ProjectContext.Provider value={{
       activeProject,
@@ -79,6 +94,7 @@ export function ProjectProvider({ children }) {
       setActiveProjectId,
       userProjects,
       addProject,
+      deleteProject,
       fetchProjects,
       loading,
       error,

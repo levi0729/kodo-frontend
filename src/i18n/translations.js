@@ -20,7 +20,7 @@ const translations = {
       projectName: 'Projekt neve',
       projectNamePlaceholder: 'pl. Új Projekt',
       projectDescription: 'Leírás',
-      projectDescriptionPlaceholder: 'Projekt le��rása...',
+      projectDescriptionPlaceholder: 'Projekt le\u00edr\u00e1sa...',
       projectType: 'Típus',
       projectStatus: 'Állapot',
       projectColor: 'Szín',

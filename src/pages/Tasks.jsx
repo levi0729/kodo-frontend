@@ -11,11 +11,11 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function TasksPage({ highlightTaskId }) {
-  const { activeProject } = useProject();
+  const { activeProject, activeProjectId } = useProject();
   const { tasks, advanceTask, updateTask, createTask, loading, hasMore, loadMoreTasks } = useTasks();
   const { t, language } = useTheme();
   const locale = language === 'en' ? 'en-US' : 'hu-HU';
-  const projectId = activeProject?.id || 1;
+  const projectId = activeProjectId;
   const highlightRef = useRef(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,14 +39,14 @@ export default function TasksPage({ highlightTaskId }) {
   ];
 
   const projectTasks = useMemo(() => {
-    let filtered = tasks.filter(t => t.project_id === projectId);
+    let filtered = tasks.filter(t => t.project_id == projectId);
     if (filterPriority) filtered = filtered.filter(t => t.priority === filterPriority);
     if (filterLabel) filtered = filtered.filter(t => (t.labels || []).includes(filterLabel));
     return filtered;
   }, [tasks, projectId, filterPriority, filterLabel]);
 
   const projectLabels = useMemo(() => {
-    const all = tasks.filter(t => t.project_id === projectId).flatMap(t => t.labels || []);
+    const all = tasks.filter(t => t.project_id == projectId).flatMap(t => t.labels || []);
     return [...new Set(all)].sort();
   }, [tasks, projectId]);
 

@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import Avatar from './Avatar';
 import { useProject } from '@/context/ProjectContext';
 import { useTheme } from '@/context/ThemeContext';
-import { projects as projectsApi, participants as participantsApi, users as usersApi } from '@/services/api';
+import { projects as projectsApi, participants as participantsApi } from '@/services/api';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { useAppData } from '@/context/AppDataContext';
@@ -23,11 +23,11 @@ const PROJECT_STATUSES = [
 ];
 
 export default function EditProjectModal({ isOpen, onClose }) {
-  const { activeProject, fetchProjects } = useProject();
+  const { activeProject, fetchProjects, deleteProject } = useProject();
   const { currentUser } = useAuth();
   const { t, language } = useTheme();
   const toast = useToast();
-  const { invalidate: invalidateCache } = useAppData();
+  const { friendsList, invalidate: invalidateCache } = useAppData();
   const sb = t.sidebar;
 
   const [form, setForm] = useState({
@@ -43,8 +43,8 @@ export default function EditProjectModal({ isOpen, onClose }) {
   const [membersLoading, setMembersLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen && activeProject) {
@@ -70,17 +70,18 @@ export default function EditProjectModal({ isOpen, onClose }) {
     finally { setMembersLoading(false); }
   };
 
-  const handleSearch = async (query) => {
+  const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.length < 2) { setSearchResults([]); return; }
-    setSearching(true);
-    try {
-      const res = await usersApi.list({ search: query, per_page: 10 });
-      const users = res.users || res.data || [];
-      const memberIds = members.map(m => m.user?.id || m.user_id);
-      setSearchResults(users.filter(u => !memberIds.includes(u.id)));
-    } catch { setSearchResults([]); }
-    finally { setSearching(false); }
+    const memberIds = members.map(m => m.user?.id || m.user_id);
+    const q = query.toLowerCase();
+    const filtered = friendsList.filter(u => {
+      if (memberIds.includes(u.id)) return false;
+      const name = (u.display_name || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+    setSearchResults(filtered);
   };
 
   const handleAddMember = async (userId) => {
@@ -130,6 +131,25 @@ export default function EditProjectModal({ isOpen, onClose }) {
     } catch (err) {
       toast.error(err.message || 'Failed to update project');
     } finally { setSaving(false); }
+  };
+
+  const isProjectOwner = currentUser?.id === activeProject?.owner_id;
+
+  const handleDelete = async () => {
+    if (!activeProject?.id || deleting) return;
+    const msg = language === 'hu'
+      ? `Biztosan törölni szeretnéd a "${activeProject.name}" projektet? Ez a művelet nem vonható vissza.`
+      : `Are you sure you want to delete "${activeProject.name}"? This action cannot be undone.`;
+    if (!confirm(msg)) return;
+    setDeleting(true);
+    try {
+      await deleteProject(activeProject.id);
+      onClose();
+    } catch {
+      // error already handled in context
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (!isOpen || !activeProject) return null;
@@ -265,7 +285,7 @@ export default function EditProjectModal({ isOpen, onClose }) {
                 type="text"
                 value={searchQuery}
                 onChange={e => handleSearch(e.target.value)}
-                placeholder={language === 'hu' ? 'Felhasználó keresése...' : 'Search users...'}
+                placeholder={language === 'hu' ? 'Ismerős keresése...' : 'Search friends...'}
                 className="kodo-input w-full text-[13px]"
               />
               {searchResults.length > 0 && (
@@ -336,6 +356,17 @@ export default function EditProjectModal({ isOpen, onClose }) {
           {saving && <Loader2 size={14} className="animate-spin" />}
           {language === 'hu' ? 'Mentés' : 'Save'}
         </button>
+
+        {isProjectOwner && (
+          <button
+            disabled={deleting}
+            onClick={handleDelete}
+            className="w-full mt-2 py-2.5 rounded-lg text-[13px] font-semibold transition-all border border-red-500/20 cursor-pointer flex items-center justify-center gap-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            {language === 'hu' ? 'Projekt törlése' : 'Delete project'}
+          </button>
+        )}
       </div>
     </div>
   );

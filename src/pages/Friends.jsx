@@ -44,26 +44,28 @@ export default function FriendsPage({ onNavigate }) {
     fetchData();
   }, []);
 
-  // Derive IDs of users that are already friends, pending, or sent
+  // Derive IDs of users that are already friends or have pending incoming requests
   const connectedUserIds = useMemo(() => {
     const ids = new Set();
-    // friendsList contains user objects directly
     friendsList.forEach(f => {
       if (f.id) ids.add(f.id);
     });
-    // pendingList/sentList contain FriendResource with user_one/user_two
     pendingList.forEach(f => {
       if (f.user_one) ids.add(f.user_one.id);
       if (f.user_two) ids.add(f.user_two.id);
     });
-    sentList.forEach(f => {
-      if (f.user_one) ids.add(f.user_one.id);
-      if (f.user_two) ids.add(f.user_two.id);
-    });
-    // Remove self
     if (currentUser?.id) ids.delete(currentUser.id);
     return ids;
-  }, [friendsList, pendingList, sentList, currentUser]);
+  }, [friendsList, pendingList, currentUser]);
+
+  // IDs of users we already sent a request to
+  const sentUserIds = useMemo(() => {
+    const ids = new Set();
+    sentList.forEach(f => {
+      if (f.user_two) ids.add(f.user_two.id);
+    });
+    return ids;
+  }, [sentList]);
 
   // Helper to extract the "other user" from a friendship record
   // Friends list returns user objects directly (with friend_record_id attached)
@@ -364,26 +366,37 @@ export default function FriendsPage({ onNavigate }) {
                 <p className="text-kodo-text-muted text-[14px]">{t.friends.noResults}</p>
               </div>
             ) : (
-              availableUsers.map(user => (
-                <div key={user.id} className="kodo-card p-4 flex items-center gap-4">
-                  <Avatar user={user} size={40} showStatus />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-semibold text-white truncate">
-                      {user.display_name}
+              availableUsers.map(user => {
+                const isSent = sentUserIds.has(user.id);
+                return (
+                  <div key={user.id} className="kodo-card p-4 flex items-center gap-4">
+                    <Avatar user={user} size={40} showStatus />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-white truncate">
+                        {user.display_name}
+                      </div>
+                      <div className="text-[12px] text-kodo-text-muted truncate">
+                        {user.job_title || user.email || ''}
+                      </div>
                     </div>
-                    <div className="text-[12px] text-kodo-text-muted truncate">
-                      {user.job_title || user.email || ''}
-                    </div>
+                    {isSent ? (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] text-kodo-text-muted text-[12px] font-medium cursor-default flex-shrink-0">
+                        <Clock size={13} />
+                        {t.friends.pendingLabel}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSendRequest(user.id)}
+                        disabled={actionLoading === user.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/25 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionLoading === user.id ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                        {t.friends.addFriend}
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleSendRequest(user.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[12px] font-medium cursor-pointer border-none hover:bg-indigo-500/25 transition-colors flex-shrink-0"
-                  >
-                    <UserPlus size={14} />
-                    {t.friends.addFriend}
-                  </button>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

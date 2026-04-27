@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useProject } from '@/context/ProjectContext';
@@ -34,6 +34,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
     target_end_date: '',
   });
   const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(false);
 
   const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -56,7 +57,8 @@ export default function CreateProjectModal({ isOpen, onClose }) {
   };
 
   const handleCreate = async () => {
-    if (!form.name.trim() || creating) return;
+    if (!form.name.trim() || creatingRef.current) return;
+    creatingRef.current = true;
     setCreating(true);
     try {
       const payload = {
@@ -78,6 +80,7 @@ export default function CreateProjectModal({ isOpen, onClose }) {
     } catch (err) {
       toast.error(err.message || 'Failed to create project');
     } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
   };

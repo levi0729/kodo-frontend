@@ -180,13 +180,13 @@ export default function Dashboard({ onNavigate }) {
   }, [activeProject, projectId]);
 
   const myTasks = useMemo(() => {
-    return allTasks.filter(t => t.project_id === projectId && (isAssignedTo(t, currentUser?.id) || t.created_by === currentUser?.id));
+    return allTasks.filter(t => t.project_id == projectId && (isAssignedTo(t, currentUser?.id) || t.created_by === currentUser?.id));
   }, [allTasks, projectId, currentUser]);
   const doneTasks = myTasks.filter(t => t.status === 'done');
 
   const userProjectsWithTasks = useMemo(() => {
     return userProjects.map(p => {
-      const pTasks = allTasks.filter(t => t.project_id === p.id);
+      const pTasks = allTasks.filter(t => t.project_id == p.id);
       const totalTasks = pTasks.length;
       const doneCount = pTasks.filter(t => t.status === 'done').length;
       const progress = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
@@ -196,7 +196,7 @@ export default function Dashboard({ onNavigate }) {
   }, [activeProject, allTasks, userProjects, currentUser]);
 
   const allProjectTasks = useMemo(() => {
-    return allTasks.filter(t => t.project_id === projectId);
+    return allTasks.filter(t => t.project_id == projectId);
   }, [allTasks, projectId]);
 
   const assignmentStats = useMemo(() => {
