@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Loader2, Plus, Trash2, UserPlus } from 'lucide-react';
 import clsx from 'clsx';
 import Avatar from './Avatar';
+import ConfirmModal from './ConfirmModal';
 import { useProject } from '@/context/ProjectContext';
 import { useTheme } from '@/context/ThemeContext';
 import { projects as projectsApi, participants as participantsApi } from '@/services/api';
@@ -45,6 +46,7 @@ export default function EditProjectModal({ isOpen, onClose }) {
   const [searchResults, setSearchResults] = useState([]);
   const [addingUser, setAddingUser] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', action: null });
 
   useEffect(() => {
     if (isOpen && activeProject) {
@@ -135,21 +137,27 @@ export default function EditProjectModal({ isOpen, onClose }) {
 
   const isProjectOwner = currentUser?.id === activeProject?.owner_id;
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!activeProject?.id || deleting) return;
     const msg = language === 'hu'
-      ? `Biztosan törölni szeretnéd a "${activeProject.name}" projektet? Ez a művelet nem vonható vissza.`
+      ? `Biztosan t\u00F6r\u00F6lni szeretn\u00E9d a \u201E${activeProject.name}\u201D projektet? Ez a m\u0171velet nem vonhat\u00F3 vissza.`
       : `Are you sure you want to delete "${activeProject.name}"? This action cannot be undone.`;
-    if (!confirm(msg)) return;
-    setDeleting(true);
-    try {
-      await deleteProject(activeProject.id);
-      onClose();
-    } catch {
-      // error already handled in context
-    } finally {
-      setDeleting(false);
-    }
+    setConfirmModal({
+      open: true,
+      message: msg,
+      action: async () => {
+        setConfirmModal({ open: false, message: '', action: null });
+        setDeleting(true);
+        try {
+          await deleteProject(activeProject.id);
+          onClose();
+        } catch {
+          // error already handled in context
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   if (!isOpen || !activeProject) return null;
@@ -368,6 +376,12 @@ export default function EditProjectModal({ isOpen, onClose }) {
           </button>
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        message={confirmModal.message}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal({ open: false, message: '', action: null })}
+      />
     </div>
   );
 }

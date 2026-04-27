@@ -186,17 +186,18 @@ export default function FindFriendsModal({ friendIds, pendingRequests, setPendin
                       <button
                         onClick={() => handleAcceptRequest(req)}
                         disabled={actionLoading === req.id}
-                        className="px-2.5 py-1 rounded-lg bg-green-500/20 text-green-400 text-[11px] font-medium cursor-pointer border-none hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 cursor-pointer border-none hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t.friends.accept}
                       >
-                        {actionLoading === req.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                        {' '}{t.friends.accept}
+                        {actionLoading === req.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                       </button>
                       <button
                         onClick={() => handleDeclineRequest(req)}
                         disabled={actionLoading === req.id}
-                        className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 text-[11px] font-medium cursor-pointer border-none hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t.friends.decline}
                       >
-                        <X size={12} />
+                        <X size={14} />
                       </button>
                     </div>
                   );

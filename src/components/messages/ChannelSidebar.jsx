@@ -19,10 +19,10 @@ export default function ChannelSidebar({
   const { t } = useTheme();
 
   return (
-    <div className={`${mobileShowChat ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] border-r-0 md:border-r border-white/[0.06] flex-col flex-shrink-0`}>
-      <div className="p-4">
-        <div className="kodo-section-title">{t.messagesPage.teams}</div>
-        <div className="flex flex-col gap-0.5">
+    <div className={`${mobileShowChat ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] border-r-0 md:border-r border-white/[0.06] flex-col flex-shrink-0 min-h-0`}>
+      <div className="p-4 pb-0 flex flex-col min-h-0" style={{ maxHeight: '40%' }}>
+        <div className="kodo-section-title flex-shrink-0">{t.messagesPage.teams}</div>
+        <div className="flex flex-col gap-0.5 overflow-y-auto">
           {userTeams.map(tm => (
             <div key={tm.id}>
               <button
@@ -39,7 +39,7 @@ export default function ChannelSidebar({
                   className="w-2 h-2 rounded-sm flex-shrink-0"
                   style={{ backgroundColor: tm.color }}
                 />
-                {tm.name}
+                <span className="truncate">{tm.name}</span>
               </button>
               {/* Show channels when this team is active */}
               {activeTeamId === tm.id && !activeDmUserId && teamChannels.length > 0 && (

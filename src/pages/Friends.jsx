@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Loader2, MessageSquare, UserMinus, UserPlus, Search, Check, X, Clock } from 'lucide-react';
 import Avatar from '@/components/Avatar';
+import ConfirmModal from '@/components/ConfirmModal';
 import { friends as friendsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -99,6 +100,7 @@ export default function FriendsPage({ onNavigate }) {
   }, [allUsers, currentUser, connectedUserIds, searchQuery]);
 
   const [actionLoading, setActionLoading] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', action: null });
 
   const handleAccept = async (record) => {
     if (actionLoading) return;
@@ -128,20 +130,27 @@ export default function FriendsPage({ onNavigate }) {
     }
   };
 
-  const handleRemove = async (record) => {
+  const handleRemove = (record) => {
     if (actionLoading) return;
-    if (!confirm(t.friends.confirmRemove)) return;
-    const recordId = record.friend_record_id || record.id;
-    setActionLoading(recordId);
-    try {
-      await friendsApi.remove(recordId);
-      toast.success(t.friends.friendRemoved);
-      fetchData();
-    } catch (err) {
-      toast.error(err.message || t.friends.removeFailed);
-    } finally {
-      setActionLoading(null);
-    }
+    const userName = record.display_name || '';
+    setConfirmModal({
+      open: true,
+      message: (t.friends.confirmRemoveNamed || t.friends.confirmRemove).replace('{name}', userName),
+      action: async () => {
+        setConfirmModal({ open: false, message: '', action: null });
+        const recordId = record.friend_record_id || record.id;
+        setActionLoading(recordId);
+        try {
+          await friendsApi.remove(recordId);
+          toast.success(t.friends.friendRemoved);
+          fetchData();
+        } catch (err) {
+          toast.error(err.message || t.friends.removeFailed);
+        } finally {
+          setActionLoading(null);
+        }
+      },
+    });
   };
 
   const handleSendRequest = async (userId) => {
@@ -401,6 +410,12 @@ export default function FriendsPage({ onNavigate }) {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        message={confirmModal.message}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal({ open: false, message: '', action: null })}
+      />
     </div>
   );
 }

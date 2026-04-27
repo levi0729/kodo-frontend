@@ -8,6 +8,7 @@ import { useToast } from '@/components/Toast';
 import NewTeamModal from '@/components/NewTeamModal';
 import TeamMemberPopup from '@/components/TeamMemberPopup';
 import CreateProjectModal from '@/components/CreateProjectModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppData } from '@/context/AppDataContext';
 import { friends as friendsApi } from '@/services/api';
@@ -22,6 +23,7 @@ function TeamChannelsSection({ team, isOwner, onStartChat }) {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', channel_type: 'standard' });
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', action: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -53,15 +55,21 @@ function TeamChannelsSection({ team, isOwner, onStartChat }) {
     setCreating(false);
   };
 
-  const handleDelete = async (channelId) => {
-    if (!confirm(tp.confirmDeleteChannel)) return;
-    try {
-      await channelsApi.destroy(channelId);
-      setChannels(prev => prev.filter(c => c.id !== channelId));
-      toast.success(tp.channelDeleted);
-    } catch (err) {
-      toast.error(err.message || tp.channelDeleteFailed);
-    }
+  const handleDelete = (channelId) => {
+    setConfirmModal({
+      open: true,
+      message: tp.confirmDeleteChannel,
+      action: async () => {
+        try {
+          await channelsApi.destroy(channelId);
+          setChannels(prev => prev.filter(c => c.id !== channelId));
+          toast.success(tp.channelDeleted);
+        } catch (err) {
+          toast.error(err.message || tp.channelDeleteFailed);
+        }
+        setConfirmModal({ open: false, message: '', action: null });
+      },
+    });
   };
 
   const iconFor = (type) => {
@@ -184,6 +192,12 @@ function TeamChannelsSection({ team, isOwner, onStartChat }) {
           ))}
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        message={confirmModal.message}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal({ open: false, message: '', action: null })}
+      />
     </div>
   );
 }
@@ -203,6 +217,7 @@ export default function TeamsPage({ onNavigate }) {
   const { activeProject, userProjects } = useProject();
   const { t } = useTheme();
   const { allUsers, friendsList, invalidate: invalidateCache } = useAppData();
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', action: null });
 
   useEffect(() => {
     if (!activeProject?.id) return;
@@ -281,28 +296,44 @@ export default function TeamsPage({ onNavigate }) {
     }
   };
 
-  const handleLeaveTeam = async (teamId) => {
-    if (!confirm(t.teamsPage.confirmLeave)) return;
-    try {
-      await teamsApi.leave(teamId);
-      setTeams(prev => prev.filter(t => t.id !== teamId));
-      setExpandedTeam(null);
-      toast.success(t.teamsPage.teamLeft);
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const handleLeaveTeam = (teamId) => {
+    const team = teams.find(tm => tm.id === teamId);
+    const teamName = team?.name || '';
+    setConfirmModal({
+      open: true,
+      message: (t.teamsPage.confirmLeaveNamed || t.teamsPage.confirmLeave).replace('{name}', teamName),
+      action: async () => {
+        try {
+          await teamsApi.leave(teamId);
+          setTeams(prev => prev.filter(tm => tm.id !== teamId));
+          setExpandedTeam(null);
+          toast.success(t.teamsPage.teamLeft);
+        } catch (err) {
+          toast.error(err.message);
+        }
+        setConfirmModal({ open: false, message: '', action: null });
+      },
+    });
   };
 
-  const handleDeleteTeam = async (teamId) => {
-    if (!confirm(t.teamsPage.confirmDelete)) return;
-    try {
-      await teamsApi.destroy(teamId);
-      setTeams(prev => prev.filter(t => t.id !== teamId));
-      setExpandedTeam(null);
-      toast.success(t.teamsPage.teamDeleted);
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const handleDeleteTeam = (teamId) => {
+    const team = teams.find(tm => tm.id === teamId);
+    const teamName = team?.name || '';
+    setConfirmModal({
+      open: true,
+      message: (t.teamsPage.confirmDeleteNamed || t.teamsPage.confirmDelete).replace('{name}', teamName),
+      action: async () => {
+        try {
+          await teamsApi.destroy(teamId);
+          setTeams(prev => prev.filter(tm => tm.id !== teamId));
+          setExpandedTeam(null);
+          toast.success(t.teamsPage.teamDeleted);
+        } catch (err) {
+          toast.error(err.message);
+        }
+        setConfirmModal({ open: false, message: '', action: null });
+      },
+    });
   };
 
   if (teamsLoading) {
@@ -585,6 +616,12 @@ export default function TeamsPage({ onNavigate }) {
         availableUsers={allUsers.filter(u => friendIds.has(u.id))}
         projects={userProjects}
         activeProjectId={activeProject?.id}
+      />
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        message={confirmModal.message}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal({ open: false, message: '', action: null })}
       />
     </div>
   );

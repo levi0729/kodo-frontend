@@ -145,6 +145,7 @@ export function MessagesProvider({ children }) {
 
   const openDM = useCallback((otherUserId) => {
     if (!currentUser) return;
+    setActiveChannelId(null);
     const roomId = Math.min(currentUser.id, otherUserId) * DM_ROOM_MULTIPLIER + Math.max(currentUser.id, otherUserId);
     openRoom(roomId);
     return roomId;

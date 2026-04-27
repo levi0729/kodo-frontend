@@ -149,17 +149,15 @@ export default function MessagesPage({ dmUserId, teamId }) {
   }, [openConversation]);
 
   const handleSend = useCallback(async (msgText, fileList) => {
-    try {
-      if (activeDmUserId) {
-        await sendMessage(activeDmUserId, msgText, fileList);
-      } else if (activeConversationId) {
-        await sendConversationMessage(activeConversationId, msgText);
-      } else if (activeChannelId) {
-        await sendChannelMessage(activeChannelId, msgText);
-      } else if (activeTeamId) {
-        await sendTeamMessage(activeTeamId, msgText, fileList);
-      }
-    } catch { /* handled by context */ }
+    if (activeDmUserId) {
+      await sendMessage(activeDmUserId, msgText, fileList);
+    } else if (activeConversationId) {
+      await sendConversationMessage(activeConversationId, msgText);
+    } else if (activeChannelId) {
+      await sendChannelMessage(activeChannelId, msgText);
+    } else if (activeTeamId) {
+      await sendTeamMessage(activeTeamId, msgText, fileList);
+    }
   }, [activeDmUserId, activeConversationId, activeChannelId, activeTeamId, sendMessage, sendConversationMessage, sendChannelMessage, sendTeamMessage]);
 
   // Determine header info

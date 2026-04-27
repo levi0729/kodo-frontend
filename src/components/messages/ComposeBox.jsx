@@ -103,13 +103,17 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
     if (!message.trim() && attachments.length === 0) return;
     const msgText = message.trim();
     const fileList = attachments.map(a => a.file).filter(Boolean);
-    await onSend(msgText, fileList);
-    setMessage('');
-    setAttachments(prev => {
-      prev.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview); });
-      return [];
-    });
-    setShowMentionPopup(false);
+    try {
+      await onSend(msgText, fileList);
+      setMessage('');
+      setAttachments(prev => {
+        prev.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview); });
+        return [];
+      });
+      setShowMentionPopup(false);
+    } catch {
+      // Error already shown by toast — keep message so user can retry
+    }
   };
 
   const formatFileSize = (bytes) => {
