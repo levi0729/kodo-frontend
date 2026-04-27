@@ -6,6 +6,7 @@ import {
 import Avatar, { AvatarStack } from '@/components/Avatar';
 import EventDetailPopup from '@/components/calendar/EventDetailPopup';
 import NewEventModal from '@/components/calendar/NewEventModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import { useProject } from '@/context/ProjectContext';
 import { calendarEvents as calendarApi, participants as participantsApi } from '@/services/api';
 import { useTasks } from '@/context/TasksContext';
@@ -30,7 +31,7 @@ function sameDay(a, b) {
 }
 
 function evtCategory(e) {
-  if (e.type) return e.type;
+  if (e.category) return e.category;
   if (e.is_online_meeting) return 'meetings';
   if (e.location) return 'events';
   return 'meetings';
@@ -271,6 +272,7 @@ export default function CalendarPage() {
   const [projectMembers, setProjectMembers] = useState([]);
   const [calLoading, setCalLoading] = useState(true);
   const [dayDetailDay, setDayDetailDay] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', action: null });
   const { allUsers } = useAppData();
 
   useEffect(() => {
@@ -280,7 +282,7 @@ export default function CalendarPage() {
     }
     setCalLoading(true);
     Promise.all([
-      calendarApi.list().catch(() => ({ data: [] })),
+      calendarApi.list({ per_page: 100 }).catch(() => ({ data: [] })),
       participantsApi.list('project', activeProject.id).catch(() => ({ data: [] })),
     ]).then(([eventsRes, membersRes]) => {
       setEvents(eventsRes.calendar_events || eventsRes.data || []);
@@ -362,16 +364,22 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDelete = async (eventId) => {
-    if (!confirm(cal.confirmDelete)) return;
-    try {
-      await calendarApi.destroy(eventId);
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      setSelectedEvent(null);
-      toast.success(cal.eventDeleted);
-    } catch (err) {
-      toast.error(err.message || cal.eventDeleteFailed);
-    }
+  const handleDelete = (eventId) => {
+    setConfirmModal({
+      open: true,
+      message: cal.confirmDelete,
+      action: async () => {
+        try {
+          await calendarApi.destroy(eventId);
+          setEvents(prev => prev.filter(e => e.id !== eventId));
+          setSelectedEvent(null);
+          toast.success(cal.eventDeleted);
+        } catch (err) {
+          toast.error(err.message || cal.eventDeleteFailed);
+        }
+        setConfirmModal({ open: false, message: '', action: null });
+      },
+    });
   };
 
   const handleRsvp = async (eventId, responseStatus) => {
@@ -648,6 +656,13 @@ export default function CalendarPage() {
           statusLabels={statusLabels}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        message={confirmModal.message}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal({ open: false, message: '', action: null })}
+      />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
         meetingUrl: editEvent.meeting_url || '',
         color: editEvent.color || EVENT_COLORS[0],
         attendees: editEvent.attendees || [],
-        type: editEvent.type || 'meetings',
+        type: editEvent.category || 'meetings',
       });
     } else if (isOpen) {
       setForm(f => ({ ...f, date: dateStr }));
@@ -76,6 +76,7 @@ export default function NewEventModal({ isOpen, onClose, onCreate, onUpdate, edi
       status: 'confirmed',
       reminder_minutes: 15,
       color: form.color,
+      category: form.type,
       attendees: form.attendees.length
         ? (currentUser && !form.attendees.includes(currentUser.id) ? [currentUser.id, ...form.attendees] : form.attendees)
         : (currentUser ? [currentUser.id] : []),

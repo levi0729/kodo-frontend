@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { users as usersApi, settings as settingsApi, auth as authApi } from '@/services/api';
 import { useToast } from '@/components/Toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 
 function Toggle({ value, onChange, disabled = false }) {
   return (
@@ -39,6 +39,89 @@ function SegmentedControl({ value, options, onChange }) {
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function TimePicker({ value, onChange, label }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const hours = value ? value.split(':')[0] : '';
+  const minutes = value ? value.split(':')[1] : '';
+
+  useEffect(() => {
+    const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const setTime = (h, m) => {
+    onChange(`${h}:${m}`);
+  };
+
+  const pad = (n) => String(n).padStart(2, '0');
+
+  const nudge = (part, dir) => {
+    let h = parseInt(hours || '0', 10);
+    let m = parseInt(minutes || '0', 10);
+    if (part === 'h') h = (h + dir + 24) % 24;
+    else m = (m + dir * 5 + 60) % 60;
+    setTime(pad(h), pad(m));
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium cursor-pointer transition-all border bg-white/[0.04] border-white/[0.08] text-kodo-text hover:bg-white/[0.06] min-w-[100px] justify-center"
+      >
+        <Clock size={13} className="text-kodo-text-dim" />
+        {value || '--:--'}
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 right-0 z-50 bg-[#1a1a24] border border-white/[0.08] rounded-xl p-3 shadow-2xl animate-fade-in-up min-w-[160px]">
+          {label && <div className="text-[10px] text-kodo-text-dim font-medium uppercase tracking-wider mb-2 text-center">{label}</div>}
+          <div className="flex items-center justify-center gap-2">
+            {/* Hours */}
+            <div className="flex flex-col items-center gap-1">
+              <button
+                onClick={() => nudge('h', 1)}
+                className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.06] cursor-pointer bg-transparent border-none transition-colors"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <div className="w-10 h-10 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[16px] font-semibold text-white tabular-nums">
+                {hours || '00'}
+              </div>
+              <button
+                onClick={() => nudge('h', -1)}
+                className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.06] cursor-pointer bg-transparent border-none transition-colors"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+            <span className="text-[18px] font-bold text-kodo-text-dim mt-[-2px]">:</span>
+            {/* Minutes */}
+            <div className="flex flex-col items-center gap-1">
+              <button
+                onClick={() => nudge('m', 1)}
+                className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.06] cursor-pointer bg-transparent border-none transition-colors"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <div className="w-10 h-10 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[16px] font-semibold text-white tabular-nums">
+                {minutes || '00'}
+              </div>
+              <button
+                onClick={() => nudge('m', -1)}
+                className="p-1 rounded-md text-kodo-text-dim hover:text-indigo-400 hover:bg-white/[0.06] cursor-pointer bg-transparent border-none transition-colors"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -290,20 +373,16 @@ export default function SettingsPage() {
                 <div className="text-[12px] text-kodo-text-muted mt-0.5">{s.dndModeDesc}</div>
               </div>
               <div className="flex gap-2 items-center">
-                <input
-                  type="time"
-                  aria-label={s.dndStart}
+                <TimePicker
                   value={settingsState.dnd_start_time || ''}
-                  onChange={e => updateSetting('dnd_start_time', e.target.value || null)}
-                  className="kodo-input text-[12px] w-[90px] sm:w-[100px]"
+                  onChange={v => updateSetting('dnd_start_time', v)}
+                  label={s.dndStart}
                 />
-                <span className="text-kodo-text-dim text-[12px]">–</span>
-                <input
-                  type="time"
-                  aria-label={s.dndEnd}
+                <span className="text-kodo-text-dim text-[12px] font-medium">–</span>
+                <TimePicker
                   value={settingsState.dnd_end_time || ''}
-                  onChange={e => updateSetting('dnd_end_time', e.target.value || null)}
-                  className="kodo-input text-[12px] w-[90px] sm:w-[100px]"
+                  onChange={v => updateSetting('dnd_end_time', v)}
+                  label={s.dndEnd}
                 />
               </div>
             </div>
