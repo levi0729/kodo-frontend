@@ -160,6 +160,7 @@ export function MessagesProvider({ children }) {
   const openChannel = useCallback(async (channelId) => {
     setActiveChannelId(channelId);
     setActiveRoomId(null);
+    setActiveConversationId(null);
     setMessages([]);
     setMessagesLoading(true);
     // Stop room polling
