@@ -72,11 +72,11 @@ export default function CreateProjectModal({ isOpen, onClose }) {
       };
       const data = await projectsApi.create(payload);
       const newProject = data.project;
-      await fetchProjects();
-      if (newProject?.id) setActiveProjectId(newProject.id);
       toast.success(t.taskToasts?.projectCreateSuccess || 'Project created');
       reset();
       onClose();
+      await fetchProjects().catch(() => {});
+      if (newProject?.id) setActiveProjectId(newProject.id);
     } catch (err) {
       toast.error(err.message || 'Failed to create project');
     } finally {
