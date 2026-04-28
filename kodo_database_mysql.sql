@@ -125,6 +125,7 @@ CREATE TABLE `teams` (
 
     -- Archive/Delete
     `is_archived` TINYINT(1) DEFAULT 0,
+    `is_default` TINYINT(1) DEFAULT 0,
     `archived_at` DATETIME DEFAULT NULL,
     `archived_by` INT UNSIGNED DEFAULT NULL,
 

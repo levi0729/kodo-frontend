@@ -168,6 +168,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
   };
 
   const canSend = !!(activeDmUserId || activeTeamId || activeChannelId || activeConversationId);
+  const canSendProps = canSend;
 
   if (dataLoading) {
     return (
@@ -299,6 +300,7 @@ export default function MessagesPage({ dmUserId, teamId }) {
           currentUser={currentUser}
           onSend={handleSend}
           onTyping={handleTyping}
+          canSend={canSendProps}
         />
       </div>
 

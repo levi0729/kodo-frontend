@@ -3,7 +3,7 @@ import { Send, Paperclip, AtSign, X, FileText } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { useTheme } from '@/context/ThemeContext';
 
-export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, activeConversation, allUsers, currentUser, onSend, onTyping }) {
+export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeChannel, activeConversation, allUsers, currentUser, onSend, onTyping, canSend: canSendProp }) {
   const { t } = useTheme();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -122,7 +122,7 @@ export default function ComposeBox({ activeDmUserId, dmUser, activeTeam, activeC
     return bytes + ' B';
   };
 
-  const canSend = !!(activeDmUserId || activeTeam || activeChannel || activeConversation);
+  const canSend = canSendProp !== undefined ? canSendProp : !!(activeDmUserId || activeTeam || activeChannel || activeConversation);
 
   return (
     <div className="px-3 md:px-6 py-3 border-t border-white/[0.06] flex-shrink-0">
