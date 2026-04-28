@@ -76,7 +76,8 @@ html.light {
 /* Base */
 
 * { box-sizing: border-box; }
-html, body, #root { margin: 0; height: 100%; }
+html, body, #root { margin: 0; min-height: 100%; }
+#root { overflow-y: auto; }
 input, textarea, button { font-family: 'DM Sans', system-ui, sans-serif; }
 
 /* Hide browser-native password reveal button (Edge, Chrome) */
